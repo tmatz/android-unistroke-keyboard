@@ -25,11 +25,25 @@ import java.lang.reflect.*;
 public class GestureInputMethod extends InputMethodService
 {
     private boolean mStoreReady;
-    private final GestureLibrary mStoreAlpabet = createGesture("gestures.alphabet");
-    private final GestureLibrary mStoreNumber = createGesture("gestures.number");
-    private final GestureLibrary mStoreSpecial = createGesture("gestures.special");
-    private final GestureLibrary mStoreControl = createGesture("gestures.control");
-    private final GestureLibrary mStoreControlSingle = createGesture("gestures.control.single");
+
+    private final File mFileAlpabet = getGesturePath("gestures.alphabet");
+    private final File mFileNumber = getGesturePath("gestures.number");
+    private final File mFileSpecial = getGesturePath("gestures.special");
+    private final File mFileControl = getGesturePath("gestures.control");
+    private final File mFileControlSingle = getGesturePath("gestures.control.single");
+
+    private GestureLibrary mStoreAlpabet;
+    private GestureLibrary mStoreNumber;
+    private GestureLibrary mStoreSpecial;
+    private GestureLibrary mStoreControl;
+    private GestureLibrary mStoreControlSingle;
+
+    private long mTimestampAlpabet;
+    private long mTimestampNumber;
+    private long mTimestampSpecial;
+    private long mTimestampControl;
+    private long mTimestampControlSingle;
+
     private View mView;
     private TextView mState;
     private boolean mSpecial;
@@ -39,6 +53,12 @@ public class GestureInputMethod extends InputMethodService
     public void onCreate()
     {
         super.onCreate();
+
+        mStoreAlpabet = createGesture(mFileAlpabet);
+        mStoreNumber = createGesture(mFileNumber);
+        mStoreSpecial = createGesture(mFileSpecial);
+        mStoreControl = createGesture(mFileControl);
+        mStoreControlSingle = createGesture(mFileControlSingle);
 
         loadGestures();
     }
@@ -52,6 +72,8 @@ public class GestureInputMethod extends InputMethodService
     @Override
     public View onCreateInputView()
     {
+        reloadGestures();
+
         mView = getLayoutInflater().inflate(R.layout.input_method, null);
         mState = mView.findViewById(R.id.state);
 
@@ -69,12 +91,17 @@ public class GestureInputMethod extends InputMethodService
     @Override
     public void onStartInput(EditorInfo attribute, boolean restarting)
     {
+        reloadGestures();
     }
 
-    private static GestureLibrary createGesture(String fileName)
+    private static File getGesturePath(String fileName)
     {
         File baseDir = Environment.getExternalStorageDirectory();
-        File file = new File(baseDir, fileName);
+        return new File(baseDir, fileName);
+    }
+
+    private static GestureLibrary createGesture(File file)
+    {
         GestureLibrary store = GestureLibraries.fromFile(file);
         store.setOrientationStyle(8);
         return store;
@@ -94,12 +121,66 @@ public class GestureInputMethod extends InputMethodService
         }
 
         mStoreAlpabet.load();
+        mTimestampAlpabet = mFileAlpabet.lastModified();
+
         mStoreNumber.load();
+        mTimestampNumber = mFileNumber.lastModified();
+
         mStoreSpecial.load();
+        mTimestampSpecial = mFileSpecial.lastModified();
+
         mStoreControl.load();
+        mTimestampControl = mFileControl.lastModified();
+
         mStoreControlSingle.load();
+        mTimestampControlSingle = mFileControlSingle.lastModified();
 
         mStoreReady = true;
+    }
+
+    private void reloadGestures()
+    {
+        if (!mStoreReady)
+        {
+            return;
+        }
+
+        long mtime;
+
+        mtime = mFileAlpabet.lastModified();
+        if (mtime != mTimestampAlpabet)
+        {
+            mStoreAlpabet.load();
+            mTimestampAlpabet = mtime;
+        }
+
+        mtime = mFileNumber.lastModified();
+        if (mtime != mTimestampNumber)
+        {
+            mStoreNumber.load();
+            mTimestampNumber = mtime;
+        }
+
+        mtime = mFileSpecial.lastModified();
+        if (mtime != mTimestampSpecial)
+        {
+            mStoreSpecial.load();
+            mTimestampSpecial = mtime;
+        }
+
+        mtime = mFileControl.lastModified();
+        if (mtime != mTimestampControl)
+        {
+            mStoreControl.load();
+            mTimestampControl = mtime;
+        }
+
+        mtime = mFileControlSingle.lastModified();
+        if (mtime != mTimestampControlSingle)
+        {
+            mStoreControlSingle.load();
+            mTimestampControlSingle = mtime;
+        }
     }
 
     private void setState()
@@ -151,13 +232,11 @@ public class GestureInputMethod extends InputMethodService
         @Override
         public void onGesture(GestureOverlayView overlay, MotionEvent event)
         {
-            // TODO: Implement this method
         }
 
         @Override
         public void onGestureCancelled(GestureOverlayView overlay, MotionEvent event)
         {
-            // TODO: Implement this method
         }
 
         @Override
@@ -290,14 +369,14 @@ public class GestureInputMethod extends InputMethodService
             if ((mMetaState & KeyEvent.META_SHIFT_MASK) != 0)
             {
                 shift = toKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, 0);
-                //sendEvent(shift);
+                sendEvent(shift);
             }
 
             KeyEvent ctrl = null;
             if ((mMetaState & KeyEvent.META_CTRL_MASK) != 0)
             {
                 ctrl = toKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_CTRL_LEFT, mMetaState & KeyEvent.META_SHIFT_MASK);
-                //sendEvent(ctrl);
+                sendEvent(ctrl);
             }
 
             KeyEvent event = toKeyEvent(KeyEvent.ACTION_DOWN, keyCode, mMetaState);
@@ -306,12 +385,12 @@ public class GestureInputMethod extends InputMethodService
 
             if (ctrl != null)
             {
-                //sendEvent(KeyEvent.changeAction(ctrl, KeyEvent.ACTION_UP));
+                sendEvent(KeyEvent.changeAction(ctrl, KeyEvent.ACTION_UP));
             }
 
             if (shift != null)
             {
-                //sendEvent(KeyEvent.changeAction(shift, KeyEvent.ACTION_UP));
+                sendEvent(KeyEvent.changeAction(shift, KeyEvent.ACTION_UP));
             }
         }
 
