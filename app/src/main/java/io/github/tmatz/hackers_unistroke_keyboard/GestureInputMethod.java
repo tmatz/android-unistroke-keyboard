@@ -25,7 +25,7 @@ import java.lang.reflect.*;
 public class GestureInputMethod extends InputMethodService
 {
     private boolean mStoreReady;
-    private final GestureLibrary mStoreAlpabet = createGesture("gestures");
+    private final GestureLibrary mStoreAlpabet = createGesture("gestures.alphabet");
     private final GestureLibrary mStoreNumber = createGesture("gestures.number");
     private final GestureLibrary mStoreSpecial = createGesture("gestures.special");
     private final GestureLibrary mStoreControl = createGesture("gestures.control");
@@ -186,15 +186,14 @@ public class GestureInputMethod extends InputMethodService
 
             if (mSpecial)
             {
-                prediction = getPrediction(null, gesture, mStoreSpecial, 0.5);
+                prediction = getPrediction(null, gesture, mStoreSpecial, 0.7);
             }
             else
             {
-                prediction = getPrediction(null, gesture, mMainStore, 0.5);
+                prediction = getPrediction(null, gesture, mMainStore, 0.7);
+                prediction = getPrediction(prediction, gesture, mStoreControl, 0.7);
+                prediction = getPrediction(prediction, gesture, mStoreControlSingle, 0.2);
             }
-
-            prediction = getPrediction(prediction, gesture, mStoreControl, 0.5);
-            prediction = getPrediction(prediction, gesture, mStoreControlSingle, 0.1);
 
             if (Double.isNaN(prediction.score))
             {
@@ -241,6 +240,15 @@ public class GestureInputMethod extends InputMethodService
                     mSpecial = false;
                     break;
 
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                case KeyEvent.KEYCODE_DPAD_UP:
+                case KeyEvent.KEYCODE_DPAD_DOWN:
+                    key(keyCode);
+                    mMetaState &= ~KeyEvent.META_CTRL_MASK;
+                    mSpecial = false;
+                    break;
+
                 default:
                     key(keyCode);
                     mMetaState = 0;
@@ -282,14 +290,14 @@ public class GestureInputMethod extends InputMethodService
             if ((mMetaState & KeyEvent.META_SHIFT_MASK) != 0)
             {
                 shift = toKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, 0);
-                sendEvent(shift);
+                //sendEvent(shift);
             }
 
             KeyEvent ctrl = null;
             if ((mMetaState & KeyEvent.META_CTRL_MASK) != 0)
             {
                 ctrl = toKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_CTRL_LEFT, mMetaState & KeyEvent.META_SHIFT_MASK);
-                sendEvent(ctrl);
+                //sendEvent(ctrl);
             }
 
             KeyEvent event = toKeyEvent(KeyEvent.ACTION_DOWN, keyCode, mMetaState);
@@ -298,12 +306,12 @@ public class GestureInputMethod extends InputMethodService
 
             if (ctrl != null)
             {
-                sendEvent(KeyEvent.changeAction(ctrl, KeyEvent.ACTION_UP));
+                //sendEvent(KeyEvent.changeAction(ctrl, KeyEvent.ACTION_UP));
             }
 
             if (shift != null)
             {
-                sendEvent(KeyEvent.changeAction(shift, KeyEvent.ACTION_UP));
+                //sendEvent(KeyEvent.changeAction(shift, KeyEvent.ACTION_UP));
             }
         }
 
