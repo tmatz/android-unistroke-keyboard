@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:layout_width="match_parent"
     android:orientation="vertical"
-    android:background="@drawable/border">
+    android:background="#000000">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -13,9 +13,9 @@
         android:scrollbars="none"
         android:padding="3dip">
 
-        <android.gesture.GestureOverlayView
-            android:layout_width="wrap_content"
+        <RelativeLayout
             android:layout_height="match_parent"
+            android:layout_width="wrap_content"
             android:id="@+id/left_panel_gesture">
 
             <LinearLayout
@@ -45,7 +45,7 @@
 
             </LinearLayout>
 
-        </android.gesture.GestureOverlayView>
+        </RelativeLayout>
 
         <android.gesture.GestureOverlayView
             android:id="@+id/gestures_overlay"
@@ -111,9 +111,9 @@
 
         </android.gesture.GestureOverlayView>
 
-        <android.gesture.GestureOverlayView
-            android:layout_width="wrap_content"
+        <RelativeLayout
             android:layout_height="match_parent"
+            android:layout_width="wrap_content"
             android:id="@+id/right_panel_gesture">
 
             <LinearLayout
@@ -144,7 +144,7 @@
 
             </LinearLayout>
 
-        </android.gesture.GestureOverlayView>
+        </RelativeLayout>
 
     </LinearLayout>
 
