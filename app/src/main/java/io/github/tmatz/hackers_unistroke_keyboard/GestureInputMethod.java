@@ -174,6 +174,12 @@ public class GestureInputMethod extends InputMethodService
         reloadGestures();
     }
 
+    @Override
+    public void onStartInputView(EditorInfo info, boolean restarting)
+    {
+        reloadGestures();
+    }
+
     private static File getGesturePath(String fileName)
     {
         File baseDir = Environment.getExternalStorageDirectory();
