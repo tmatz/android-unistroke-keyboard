@@ -8,10 +8,44 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="200dip"
+        android:layout_height="160dip"
         android:orientation="horizontal"
         android:scrollbars="none"
         android:padding="3dip">
+
+        <android.gesture.GestureOverlayView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:id="@+id/left_panel_gesture">
+
+            <LinearLayout
+                android:layout_height="match_parent"
+                android:layout_width="wrap_content"
+                android:orientation="vertical"
+                android:id="@+id/left_panel"
+                android:layout_margin="@dimen/layout_margin">
+
+                <Button
+                    android:layout_height="@dimen/button_size"
+                    android:layout_width="@dimen/button_size"
+                    android:text="S"
+                    android:id="@+id/button_shift"
+                    android:background="#222222"
+                    android:textColor="#C6C6C6"
+                    android:layout_marginBottom="@dimen/layout_margin"/>
+
+                <Button
+                    android:layout_height="@dimen/button_size"
+                    android:layout_width="@dimen/button_size"
+                    android:text="C"
+                    android:id="@+id/button_ctrl"
+                    android:background="#222222"
+                    android:textColor="#C6C6C6"
+                    android:layout_marginTop="@dimen/layout_margin"/>
+
+            </LinearLayout>
+
+        </android.gesture.GestureOverlayView>
 
         <android.gesture.GestureOverlayView
             android:id="@+id/gestures_overlay"
@@ -22,7 +56,7 @@
             android:fadeEnabled="false"
             android:background="#222222"
             android:layout_weight="3.0"
-            android:layout_margin="3dip">
+            android:layout_margin="@dimen/layout_margin">
 
             <LinearLayout
                 android:layout_height="match_parent"
@@ -54,7 +88,7 @@
             android:fadeEnabled="false"
             android:background="#222222"
             android:layout_weight="2.0"
-            android:layout_margin="3dip">
+            android:layout_margin="@dimen/layout_margin">
 
             <LinearLayout
                 android:layout_height="match_parent"
@@ -72,6 +106,41 @@
                     android:layout_height="match_parent"
                     android:layout_width="match_parent"
                     android:textColor="#C6C6C6"/>
+
+            </LinearLayout>
+
+        </android.gesture.GestureOverlayView>
+
+        <android.gesture.GestureOverlayView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:id="@+id/right_panel_gesture">
+
+            <LinearLayout
+                android:layout_height="match_parent"
+                android:layout_width="wrap_content"
+                android:orientation="vertical"
+                android:id="@+id/right_panel"
+                android:layout_margin="@dimen/layout_margin">
+
+                <Button
+                    android:layout_height="@dimen/button_size"
+                    android:layout_width="@dimen/button_size"
+                    android:text="D"
+                    android:width="@dimen/button_size"
+                    android:id="@+id/button_del"
+                    android:background="#222222"
+                    android:textColor="#C6C6C6"
+                    android:layout_marginBottom="@dimen/layout_margin"/>
+
+                <Button
+                    android:layout_height="@dimen/button_size"
+                    android:layout_width="@dimen/button_size"
+                    android:text="E"
+                    android:id="@+id/button_enter"
+                    android:background="#222222"
+                    android:textColor="#C6C6C6"
+                    android:layout_marginTop="@dimen/layout_margin"/>
 
             </LinearLayout>
 

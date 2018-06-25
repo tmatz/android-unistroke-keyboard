@@ -21,6 +21,9 @@ import android.view.*;
 import android.content.pm.*;
 import android.*;
 import java.lang.reflect.*;
+import android.view.View.*;
+import android.content.*;
+import android.view.GestureDetector.*;
 
 public class GestureInputMethod extends InputMethodService
 {
@@ -84,6 +87,83 @@ public class GestureInputMethod extends InputMethodService
         final GestureOverlayView overlayNum = mView.findViewById(R.id.gestures_overlay_num);
         final TextView infoNum = mView.findViewById(R.id.info_num);
         overlayNum.addOnGestureListener(new OnGestureListener(mStoreNumber, infoNum));
+
+        final View leftPanelGesture = mView.findViewById(R.id.left_panel_gesture);
+        leftPanelGesture.setOnTouchListener(
+            new OnSwipeTouchListener(this)
+            {
+                @Override
+                public void onSwipeRight()
+                {
+                    info.setText("swipe right");
+                }
+            });
+
+        final View rightPanelGesture = mView.findViewById(R.id.right_panel_gesture);
+        rightPanelGesture.setOnTouchListener(
+            new OnSwipeTouchListener(this)
+            {
+                @Override
+                public void onSwipeLeft()
+                {
+                    info.setText("swipe left");
+                }
+            });
+
+        final Button buttonShift = mView.findViewById(R.id.button_shift);
+        buttonShift.setOnClickListener(
+            new OnClickListener()
+            {
+                @Override
+                public void onClick(View p1)
+                {
+                    mMetaState ^= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
+                    mSpecial = false;
+                    setState();
+                }
+            });
+
+        final Button buttonCtrl = mView.findViewById(R.id.button_ctrl);
+        buttonCtrl.setOnClickListener(
+            new OnClickListener()
+            {
+                @Override
+                public void onClick(View p1)
+                {
+                    mMetaState ^= (KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
+                    mSpecial = false;
+                    setState();
+                }
+            });
+
+
+        final Button buttonDel = mView.findViewById(R.id.button_del);
+        buttonDel.setOnClickListener(
+            new OnClickListener()
+            {
+                @Override
+                public void onClick(View p1)
+                {
+                    key(KeyEvent.KEYCODE_DEL);
+                    mMetaState = 0;
+                    mSpecial = false;
+                    setState();
+                }
+            });
+
+        final Button buttonEnter = mView.findViewById(R.id.button_enter);
+        buttonEnter.setOnClickListener(
+            new OnClickListener()
+            {
+                @Override
+                public void onClick(View p1)
+                {
+                    key(KeyEvent.KEYCODE_ENTER);
+                    mMetaState = 0;
+                    mSpecial = false;
+                    setState();
+                }
+            });
 
         return mView;
     }
@@ -197,6 +277,54 @@ public class GestureInputMethod extends InputMethodService
         }
 
         mState.setText(state);
+    }
+
+    private void sendEvent(KeyEvent event)
+    {
+        getCurrentInputConnection().sendKeyEvent(event);
+    }
+
+    private void key(int keyCode)
+    {
+        KeyEvent shift = null;
+        if ((mMetaState & KeyEvent.META_SHIFT_MASK) != 0)
+        {
+            shift = toKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, 0);
+            sendEvent(shift);
+        }
+
+        KeyEvent ctrl = null;
+        if ((mMetaState & KeyEvent.META_CTRL_MASK) != 0)
+        {
+            ctrl = toKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_CTRL_LEFT, mMetaState & KeyEvent.META_SHIFT_MASK);
+            sendEvent(ctrl);
+        }
+
+        KeyEvent event = toKeyEvent(KeyEvent.ACTION_DOWN, keyCode, mMetaState);
+        sendEvent(event);
+        sendEvent(KeyEvent.changeAction(event, KeyEvent.ACTION_UP));
+
+        if (ctrl != null)
+        {
+            sendEvent(KeyEvent.changeAction(ctrl, KeyEvent.ACTION_UP));
+        }
+
+        if (shift != null)
+        {
+            sendEvent(KeyEvent.changeAction(shift, KeyEvent.ACTION_UP));
+        }
+    }
+
+    private KeyEvent toKeyEvent(int action, int keyCode, int metaState)
+    {
+        long eventTime = SystemClock.uptimeMillis();
+        return new KeyEvent(
+            eventTime, // downTime
+            eventTime,
+            action,
+            keyCode,
+            0, //repeat
+            metaState);
     }
 
     static class PredictionResult
@@ -328,6 +456,17 @@ public class GestureInputMethod extends InputMethodService
                     mSpecial = false;
                     break;
 
+                case KeyEvent.KEYCODE_ENTER:
+                    int action = getCurrentInputEditorInfo().actionId;
+                    key(keyCode);
+                    mMetaState = 0;
+                    mSpecial = false;
+                    if (action == EditorInfo.IME_ACTION_DONE)
+                    {
+                        getCurrentInputConnection().closeConnection();
+                    }
+                    break;
+
                 default:
                     key(keyCode);
                     mMetaState = 0;
@@ -357,53 +496,94 @@ public class GestureInputMethod extends InputMethodService
 
             return previous;
         }
+    }
 
-        private void sendEvent(KeyEvent event)
+    private class OnSwipeTouchListener implements OnTouchListener
+    {
+
+        private final GestureDetector mGestureDetector;
+
+        public OnSwipeTouchListener(Context context)
         {
-            getCurrentInputConnection().sendKeyEvent(event);
+            mGestureDetector = new GestureDetector(context, new GestureListener());
         }
 
-        private void key(int keyCode)
+        @Override
+        public boolean onTouch(View p1, MotionEvent p2)
         {
-            KeyEvent shift = null;
-            if ((mMetaState & KeyEvent.META_SHIFT_MASK) != 0)
-            {
-                shift = toKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, 0);
-                sendEvent(shift);
-            }
-
-            KeyEvent ctrl = null;
-            if ((mMetaState & KeyEvent.META_CTRL_MASK) != 0)
-            {
-                ctrl = toKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_CTRL_LEFT, mMetaState & KeyEvent.META_SHIFT_MASK);
-                sendEvent(ctrl);
-            }
-
-            KeyEvent event = toKeyEvent(KeyEvent.ACTION_DOWN, keyCode, mMetaState);
-            sendEvent(event);
-            sendEvent(KeyEvent.changeAction(event, KeyEvent.ACTION_UP));
-
-            if (ctrl != null)
-            {
-                sendEvent(KeyEvent.changeAction(ctrl, KeyEvent.ACTION_UP));
-            }
-
-            if (shift != null)
-            {
-                sendEvent(KeyEvent.changeAction(shift, KeyEvent.ACTION_UP));
-            }
+            return mGestureDetector.onTouchEvent(p2);
         }
 
-        private KeyEvent toKeyEvent(int action, int keyCode, int metaState)
+        public void onSwipeRight()
         {
-            long eventTime = SystemClock.uptimeMillis();
-            return new KeyEvent(
-                eventTime, // downTime
-                eventTime,
-                action,
-                keyCode,
-                0, //repeat
-                metaState);
+        }
+
+        public void onSwipeLeft()
+        {
+        }
+
+        public void onSwipeTop()
+        {
+        }
+
+        public void onSwipeBottom()
+        {
+        }
+
+        private class GestureListener extends SimpleOnGestureListener
+        {
+
+            private static final int SWIPE_THRESHOLD = 100;
+            private static final int SWIPE_VELOCITY_THRESHOLD = 100;
+
+            @Override
+            public boolean onDown(MotionEvent e)
+            {
+                return true;
+            }
+
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY)
+            {
+                boolean result = false;
+                try
+                {
+                    float diffY = e2.getY() - e1.getY();
+                    float diffX = e2.getX() - e1.getX();
+                    if (Math.abs(diffX) > Math.abs(diffY))
+                    {
+                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD)
+                        {
+                            if (diffX > 0)
+                            {
+                                onSwipeRight();
+                            }
+                            else
+                            {
+                                onSwipeLeft();
+                            }
+                            result = true;
+                        }
+                    }
+                    else if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD)
+                    {
+                        if (diffY > 0)
+                        {
+                            onSwipeBottom();
+                        }
+                        else
+                        {
+                            onSwipeTop();
+                        }
+                        result = true;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    exception.printStackTrace();
+                }
+                return result;
+            }
         }
     }
 }
