@@ -31,8 +31,8 @@
                     android:layout_width="@dimen/button_size"
                     android:text="CTRL"
                     android:id="@+id/button_ctrl"
-                    android:layout_marginTop="@dimen/layout_margin"
-                    android:textScaleX="0.4"/>
+                    android:textScaleX="0.6"
+                    android:background="@drawable/button"/>
 
                 <Button
                     style="?android:attr/buttonStyleSmall"
@@ -40,8 +40,8 @@
                     android:layout_width="@dimen/button_size"
                     android:text="SHIFT"
                     android:id="@+id/button_shift"
-                    android:layout_marginBottom="@dimen/layout_margin"
-                    android:textScaleX="0.4"/>
+                    android:textScaleX="0.6"
+                    android:background="@drawable/button"/>
 
             </LinearLayout>
 
@@ -146,8 +146,8 @@
                     android:text="DEL"
                     android:width="@dimen/button_size"
                     android:id="@+id/button_del"
-                    android:layout_marginBottom="@dimen/layout_margin"
-                    android:textScaleX="0.4"/>
+                    android:textScaleX="0.6"
+                    android:background="@drawable/button"/>
 
                 <Button
                     style="?android:attr/buttonStyleSmall"
@@ -155,8 +155,8 @@
                     android:layout_width="@dimen/button_size"
                     android:text="ENTER"
                     android:id="@+id/button_enter"
-                    android:layout_marginTop="@dimen/layout_margin"
-                    android:textScaleX="0.3"/>
+                    android:textScaleX="0.6"
+                    android:background="@drawable/button"/>
 
             </LinearLayout>
 

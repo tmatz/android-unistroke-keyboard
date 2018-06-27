@@ -18,28 +18,32 @@
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:text="H"
-            android:id="@+id/keyboard_button_h"/>
+            android:id="@+id/keyboard_button_h"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:text="J"
-            android:id="@+id/keyboard_button_j"/>
+            android:id="@+id/keyboard_button_j"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:text="K"
-            android:id="@+id/keyboard_button_k"/>
+            android:id="@+id/keyboard_button_k"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:text="L"
-            android:id="@+id/keyboard_button_l"/>
+            android:id="@+id/keyboard_button_l"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
@@ -48,7 +52,8 @@
             android:text="UP"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:id="@+id/keyboard_button_dpad_up"
-            android:textScaleX="0.6"/>
+            android:textScaleX="0.6"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
@@ -56,7 +61,8 @@
             android:layout_width="wrap_content"
             android:text="HOME"
             android:id="@+id/keyboard_button_home"
-            android:textScaleX="0.6"/>
+            android:textScaleX="0.6"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
@@ -86,7 +92,8 @@
             android:text="LEFT"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:id="@+id/keyboard_button_dpad_left"
-            android:textScaleX="0.6"/>
+            android:textScaleX="0.6"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
@@ -102,35 +109,40 @@
             android:text="RIGHT"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:id="@+id/keyboard_button_dpad_right"
-            android:textScaleX="0.6"/>
+            android:textScaleX="0.6"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:text="Z"
-            android:id="@+id/keyboard_button_z"/>
+            android:id="@+id/keyboard_button_z"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:text="X"
-            android:id="@+id/keyboard_button_x"/>
+            android:id="@+id/keyboard_button_x"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:text="C"
-            android:id="@+id/keyboard_button_c"/>
+            android:id="@+id/keyboard_button_c"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:text="V"
-            android:id="@+id/keyboard_button_v"/>
+            android:id="@+id/keyboard_button_v"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
@@ -139,7 +151,8 @@
             android:text="DOWN"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:id="@+id/keyboard_button_dpad_down"
-            android:textScaleX="0.6"/>
+            android:textScaleX="0.6"
+            android:background="@drawable/button"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
@@ -147,7 +160,8 @@
             android:layout_width="wrap_content"
             android:text="END"
             android:id="@+id/keyboard_button_move_end"
-            android:textScaleX="0.6"/>
+            android:textScaleX="0.6"
+            android:background="@drawable/button"/>
 
     </GridLayout>
 

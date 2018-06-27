@@ -36,6 +36,8 @@ public class GestureInputMethod extends InputMethodService
 
     private View mView;
     private View mKeyboard;
+    private Button mShift;
+    private Button mCtrl;
     private TextView mState;
     private boolean mSpecial;
     private int mMetaState;
@@ -122,8 +124,8 @@ public class GestureInputMethod extends InputMethodService
                 }
             });
 
-        final Button buttonShift = mView.findViewById(R.id.button_shift);
-        buttonShift.setOnClickListener(
+        mShift = mView.findViewById(R.id.button_shift);
+        mShift.setOnClickListener(
             new OnClickListener()
             {
                 @Override
@@ -135,8 +137,8 @@ public class GestureInputMethod extends InputMethodService
                 }
             });
 
-        final Button buttonCtrl = mView.findViewById(R.id.button_ctrl);
-        buttonCtrl.setOnClickListener(
+        mCtrl = mView.findViewById(R.id.button_ctrl);
+        mCtrl.setOnClickListener(
             new OnClickListener()
             {
                 @Override
@@ -360,18 +362,23 @@ public class GestureInputMethod extends InputMethodService
 
     private void setState()
     {
-        String state = "";
         if ((mMetaState & KeyEvent.META_SHIFT_MASK) != 0)
         {
-            state = " shift";
+            mShift.setBackgroundResource(R.drawable.button_active);
+        }
+        else
+        {
+            mShift.setBackgroundResource(R.drawable.button);
         }
 
         if ((mMetaState & KeyEvent.META_CTRL_MASK) != 0)
         {
-            state += " crtl";
+            mCtrl.setBackgroundResource(R.drawable.button_active);
         }
-
-        mState.setText(state);
+        else
+        {
+            mCtrl.setBackgroundResource(R.drawable.button);
+        }
     }
 
     private void sendEvent(KeyEvent event)
