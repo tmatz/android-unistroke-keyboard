@@ -1,29 +1,16 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
-import java.util.ArrayList;
-
-import android.app.Activity;
-import android.gesture.Gesture;
-import android.gesture.GestureLibrary;
-import android.gesture.GestureOverlayView;
-import android.gesture.Prediction;
-import android.os.Bundle;
-import android.view.MotionEvent;
-import android.view.View;
-import android.widget.TextView;
-import android.widget.*;
-import android.inputmethodservice.*;
-import android.view.inputmethod.*;
-import java.io.*;
-import android.os.*;
-import android.gesture.*;
-import android.view.*;
-import android.content.pm.*;
-import android.*;
-import java.lang.reflect.*;
-import android.view.View.*;
 import android.content.*;
+import android.gesture.*;
+import android.inputmethodservice.*;
+import android.os.*;
+import android.view.*;
 import android.view.GestureDetector.*;
+import android.view.View.*;
+import android.view.inputmethod.*;
+import android.widget.*;
+import java.io.*;
+import java.util.*;
 
 public class GestureInputMethod extends InputMethodService
 {
@@ -48,6 +35,7 @@ public class GestureInputMethod extends InputMethodService
     private long mTimestampControlSingle;
 
     private View mView;
+    private View mKeyboard;
     private TextView mState;
     private boolean mSpecial;
     private int mMetaState;
@@ -79,6 +67,12 @@ public class GestureInputMethod extends InputMethodService
 
         mView = getLayoutInflater().inflate(R.layout.input_method, null);
         mState = mView.findViewById(R.id.state);
+        final ViewGroup gestureArea = mView.findViewById(R.id.gesture_area);
+        final View unistrokeArea = mView.findViewById(R.id.unistroke_area);
+
+        mKeyboard = getLayoutInflater().inflate(R.layout.keyboard, null);
+        gestureArea.addView(mKeyboard);
+        mKeyboard.setVisibility(View.INVISIBLE);
 
         final GestureOverlayView overlay = mView.findViewById(R.id.gestures_overlay);
         final TextView info = mView.findViewById(R.id.info);
@@ -95,7 +89,16 @@ public class GestureInputMethod extends InputMethodService
                 @Override
                 public void onSwipeRight()
                 {
-                    info.setText("swipe right");
+                    if (mKeyboard.getVisibility() == View.VISIBLE)
+                    {
+                        mKeyboard.setVisibility(View.INVISIBLE);
+                        unistrokeArea.setVisibility(View.VISIBLE);
+                    }
+                    else
+                    {
+                        mKeyboard.setVisibility(View.VISIBLE);
+                        unistrokeArea.setVisibility(View.INVISIBLE);
+                    }
                 }
             });
 
@@ -106,7 +109,16 @@ public class GestureInputMethod extends InputMethodService
                 @Override
                 public void onSwipeLeft()
                 {
-                    info.setText("swipe left");
+                    if (mKeyboard.getVisibility() == View.VISIBLE)
+                    {
+                        mKeyboard.setVisibility(View.INVISIBLE);
+                        unistrokeArea.setVisibility(View.VISIBLE);
+                    }
+                    else
+                    {
+                        mKeyboard.setVisibility(View.VISIBLE);
+                        unistrokeArea.setVisibility(View.INVISIBLE);
+                    }
                 }
             });
 
@@ -115,7 +127,7 @@ public class GestureInputMethod extends InputMethodService
             new OnClickListener()
             {
                 @Override
-                public void onClick(View p1)
+                public void onClick(View v)
                 {
                     mMetaState ^= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
                     mSpecial = false;
@@ -128,7 +140,7 @@ public class GestureInputMethod extends InputMethodService
             new OnClickListener()
             {
                 @Override
-                public void onClick(View p1)
+                public void onClick(View v)
                 {
                     mMetaState ^= (KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
                     mSpecial = false;
@@ -142,7 +154,7 @@ public class GestureInputMethod extends InputMethodService
             new OnClickListener()
             {
                 @Override
-                public void onClick(View p1)
+                public void onClick(View v)
                 {
                     key(KeyEvent.KEYCODE_DEL);
                     mMetaState = 0;
@@ -156,7 +168,7 @@ public class GestureInputMethod extends InputMethodService
             new OnClickListener()
             {
                 @Override
-                public void onClick(View p1)
+                public void onClick(View v)
                 {
                     key(KeyEvent.KEYCODE_ENTER);
                     mMetaState = 0;
@@ -164,6 +176,48 @@ public class GestureInputMethod extends InputMethodService
                     setState();
                 }
             });
+
+        final Button keyboardButtonH = mKeyboard.findViewById(R.id.keyboard_button_h);
+        keyboardButtonH.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_H));
+
+        final Button keyboardButtonJ = mKeyboard.findViewById(R.id.keyboard_button_j);
+        keyboardButtonJ.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_J));
+
+        final Button keyboardButtonK = mKeyboard.findViewById(R.id.keyboard_button_k);
+        keyboardButtonK.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_K));
+
+        final Button keyboardButtonL = mKeyboard.findViewById(R.id.keyboard_button_l);
+        keyboardButtonL.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_L));
+
+        final Button keyboardButtonZ = mKeyboard.findViewById(R.id.keyboard_button_z);
+        keyboardButtonZ.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_Z));
+
+        final Button keyboardButtonX = mKeyboard.findViewById(R.id.keyboard_button_x);
+        keyboardButtonX.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_X));
+
+        final Button keyboardButtonC = mKeyboard.findViewById(R.id.keyboard_button_c);
+        keyboardButtonC.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_C));
+
+        final Button keyboardButtonV = mKeyboard.findViewById(R.id.keyboard_button_v);
+        keyboardButtonV.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_V));
+
+        final Button keyboardButtonHome = mKeyboard.findViewById(R.id.keyboard_button_home);
+        keyboardButtonHome.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_MOVE_HOME));
+
+        final Button keyboardButtonEnd = mKeyboard.findViewById(R.id.keyboard_button_move_end);
+        keyboardButtonEnd.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_MOVE_END));
+
+        final Button keyboardButtonLeft = mKeyboard.findViewById(R.id.keyboard_button_dpad_left);
+        keyboardButtonLeft.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_DPAD_LEFT));
+
+        final Button keyboardButtonRight = mKeyboard.findViewById(R.id.keyboard_button_dpad_right);
+        keyboardButtonRight.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_DPAD_RIGHT));
+
+        final Button keyboardButtonUp = mKeyboard.findViewById(R.id.keyboard_button_dpad_up);
+        keyboardButtonUp.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_DPAD_UP));
+
+        final Button keyboardButtonDown = mKeyboard.findViewById(R.id.keyboard_button_dpad_down);
+        keyboardButtonDown.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_DPAD_DOWN));
 
         return mView;
     }
@@ -269,6 +323,55 @@ public class GestureInputMethod extends InputMethodService
         }
     }
 
+    private void key(int keyCode)
+    {
+        switch (keyCode)
+        {
+            case KeyEvent.KEYCODE_UNKNOWN:
+                break;
+
+            case KeyEvent.KEYCODE_SHIFT_LEFT:
+            case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                mMetaState ^= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
+                mSpecial = false;
+                break;
+
+            case KeyEvent.KEYCODE_CTRL_LEFT:
+            case KeyEvent.KEYCODE_CTRL_RIGHT:
+                mMetaState ^= (KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
+                mSpecial = false;
+                break;
+
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+            case KeyEvent.KEYCODE_DPAD_UP:
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                sendKey(keyCode);
+                mMetaState &= ~KeyEvent.META_CTRL_MASK;
+                mSpecial = false;
+                break;
+
+            case KeyEvent.KEYCODE_ENTER:
+                int action = getCurrentInputEditorInfo().actionId;
+                sendKey(keyCode);
+                mMetaState = 0;
+                mSpecial = false;
+                if (action == EditorInfo.IME_ACTION_DONE)
+                {
+                    getCurrentInputConnection().closeConnection();
+                }
+                break;
+
+            default:
+                sendKey(keyCode);
+                mMetaState = 0;
+                mSpecial = false;
+                break;
+        }
+
+        setState();
+    }
+
     private void setState()
     {
         String state = "";
@@ -290,7 +393,7 @@ public class GestureInputMethod extends InputMethodService
         getCurrentInputConnection().sendKeyEvent(event);
     }
 
-    private void key(int keyCode)
+    private void sendKey(int keyCode)
     {
         KeyEvent shift = null;
         if ((mMetaState & KeyEvent.META_SHIFT_MASK) != 0)
@@ -352,6 +455,22 @@ public class GestureInputMethod extends InputMethodService
         }
     }
 
+    class OnKeyListener implements OnClickListener
+    {
+        private final int mKeyCode;
+
+        public OnKeyListener(int keyCode)
+        {
+            mKeyCode = keyCode;
+        }
+
+        @Override
+        public void onClick(View v)
+        {
+            key(mKeyCode);
+        }
+    }
+
     class OnGestureListener implements GestureOverlayView.OnGestureListener
     {
         private final GestureLibrary mMainStore;
@@ -389,8 +508,6 @@ public class GestureInputMethod extends InputMethodService
 
             final Gesture gesture = overlay.getGesture();
             processGesture(gesture);
-
-            setState();
         }
 
         private void processGesture(Gesture gesture)
@@ -413,7 +530,7 @@ public class GestureInputMethod extends InputMethodService
                 if (mSpecial)
                 {
                     mInfo.setText("period");
-                    key(KeyEvent.KEYCODE_PERIOD);
+                    sendKey(KeyEvent.KEYCODE_PERIOD);
                     mSpecial = false;
                 }
                 else
@@ -422,6 +539,7 @@ public class GestureInputMethod extends InputMethodService
                     mSpecial = true;
                 }
 
+                setState();
                 return;
             }
 
@@ -433,52 +551,17 @@ public class GestureInputMethod extends InputMethodService
             String name = prediction.name;
             int keyCode = KeyEvent.keyCodeFromString("KEYCODE_" + name.toUpperCase());
             mInfo.setText(String.format("%s %d", name, keyCode));
-            switch (keyCode)
+
+            if (keyCode ==  KeyEvent.KEYCODE_UNKNOWN)
             {
-                case KeyEvent.KEYCODE_UNKNOWN:
-                    getCurrentInputConnection().commitText(name, name.length());
-                    mMetaState = 0;
-                    mSpecial = false;
-                    break;
-
-                case KeyEvent.KEYCODE_SHIFT_LEFT:
-                case KeyEvent.KEYCODE_SHIFT_RIGHT:
-                    mMetaState ^= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
-                    mSpecial = false;
-                    break;
-
-                case KeyEvent.KEYCODE_CTRL_LEFT:
-                case KeyEvent.KEYCODE_CTRL_RIGHT:
-                    mMetaState ^= (KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
-                    mSpecial = false;
-                    break;
-
-                case KeyEvent.KEYCODE_DPAD_LEFT:
-                case KeyEvent.KEYCODE_DPAD_RIGHT:
-                case KeyEvent.KEYCODE_DPAD_UP:
-                case KeyEvent.KEYCODE_DPAD_DOWN:
-                    key(keyCode);
-                    mMetaState &= ~KeyEvent.META_CTRL_MASK;
-                    mSpecial = false;
-                    break;
-
-                case KeyEvent.KEYCODE_ENTER:
-                    int action = getCurrentInputEditorInfo().actionId;
-                    key(keyCode);
-                    mMetaState = 0;
-                    mSpecial = false;
-                    if (action == EditorInfo.IME_ACTION_DONE)
-                    {
-                        getCurrentInputConnection().closeConnection();
-                    }
-                    break;
-
-                default:
-                    key(keyCode);
-                    mMetaState = 0;
-                    mSpecial = false;
-                    break;
+                getCurrentInputConnection().commitText(name, name.length());
+                mMetaState = 0;
+                mSpecial = false;
+                setState();
+                return;
             }
+
+            key(keyCode);
         }
 
         private PredictionResult getPrediction(PredictionResult previous, Gesture gesture, GestureLibrary store, double scale)
@@ -501,6 +584,77 @@ public class GestureInputMethod extends InputMethodService
             }
 
             return previous;
+        }
+    }
+
+    private class OnKeyTouchGestureListener
+    implements OnTouchListener
+    ,GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener
+    {
+        private final GestureDetector mGestureDetector;
+
+        public OnKeyTouchGestureListener()
+        {
+            mGestureDetector = new GestureDetector(GestureInputMethod.this, this);
+            mGestureDetector.setOnDoubleTapListener(this);
+        }
+
+        @Override
+        public boolean onTouch(View p1, MotionEvent p2)
+        {
+            return mGestureDetector.onTouchEvent(p2);
+        }
+
+        @Override
+        public boolean onSingleTapConfirmed(MotionEvent p1)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean onDoubleTap(MotionEvent p1)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean onDoubleTapEvent(MotionEvent p1)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean onDown(MotionEvent p1)
+        {
+            return false;
+        }
+
+        @Override
+        public void onShowPress(MotionEvent p1)
+        {
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent p1)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent p1, MotionEvent p2, float p3, float p4)
+        {
+            return false;
+        }
+
+        @Override
+        public void onLongPress(MotionEvent p1)
+        {
+        }
+
+        @Override
+        public boolean onFling(MotionEvent p1, MotionEvent p2, float p3, float p4)
+        {
+            return false;
         }
     }
 

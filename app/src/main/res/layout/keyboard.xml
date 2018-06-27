@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/height"
+    android:orientation="vertical">
+
+    <GridLayout
+        columnCount="1"
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        rowCount="1"
+        android:columnCount="6"
+        android:background="#000000">
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="H"
+            android:id="@+id/keyboard_button_h"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="J"
+            android:id="@+id/keyboard_button_j"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="K"
+            android:id="@+id/keyboard_button_k"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="L"
+            android:id="@+id/keyboard_button_l"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="UP"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:id="@+id/keyboard_button_dpad_up"
+            android:textScaleX="0.6"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="HOME"
+            android:id="@+id/keyboard_button_home"
+            android:textScaleX="0.6"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="B"
+            android:visibility="invisible"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="B"
+            android:visibility="invisible"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="B"
+            android:visibility="invisible"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="LEFT"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:id="@+id/keyboard_button_dpad_left"
+            android:textScaleX="0.6"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="B"
+            android:visibility="invisible"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="RIGHT"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:id="@+id/keyboard_button_dpad_right"
+            android:textScaleX="0.6"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="Z"
+            android:id="@+id/keyboard_button_z"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="X"
+            android:id="@+id/keyboard_button_x"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="C"
+            android:id="@+id/keyboard_button_c"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="V"
+            android:id="@+id/keyboard_button_v"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="DOWN"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:id="@+id/keyboard_button_dpad_down"
+            android:textScaleX="0.6"/>
+
+        <Button
+            style="?android:attr/buttonStyleSmall"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="END"
+            android:id="@+id/keyboard_button_move_end"
+            android:textScaleX="0.6"/>
+
+    </GridLayout>
+
+</LinearLayout>
+

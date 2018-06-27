@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:layout_width="match_parent"
     android:orientation="vertical"
     android:background="#000000">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="160dip"
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:scrollbars="none"
         android:padding="3dip">
@@ -26,90 +26,106 @@
                 android:layout_margin="@dimen/layout_margin">
 
                 <Button
+                    style="?android:attr/buttonStyleSmall"
                     android:layout_height="@dimen/button_size"
                     android:layout_width="@dimen/button_size"
-                    android:text="S"
-                    android:id="@+id/button_shift"
-                    android:background="#222222"
-                    android:textColor="#C6C6C6"
-                    android:layout_marginBottom="@dimen/layout_margin"/>
+                    android:text="CTRL"
+                    android:id="@+id/button_ctrl"
+                    android:layout_marginTop="@dimen/layout_margin"
+                    android:textScaleX="0.4"/>
 
                 <Button
+                    style="?android:attr/buttonStyleSmall"
                     android:layout_height="@dimen/button_size"
                     android:layout_width="@dimen/button_size"
-                    android:text="C"
-                    android:id="@+id/button_ctrl"
-                    android:background="#222222"
-                    android:textColor="#C6C6C6"
-                    android:layout_marginTop="@dimen/layout_margin"/>
+                    android:text="SHIFT"
+                    android:id="@+id/button_shift"
+                    android:layout_marginBottom="@dimen/layout_margin"
+                    android:textScaleX="0.4"/>
 
             </LinearLayout>
 
         </FrameLayout>
 
-        <android.gesture.GestureOverlayView
-            android:id="@+id/gestures_overlay"
+        <FrameLayout
+            android:layout_height="wrap_content"
             android:layout_width="0dip"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gestureStrokeType="single"
-            android:fadeEnabled="false"
-            android:background="#222222"
-            android:layout_weight="3.0"
-            android:layout_margin="@dimen/layout_margin">
+            android:layout_weight="1.0"
+            android:id="@+id/gesture_area">
 
             <LinearLayout
-                android:layout_height="match_parent"
+                android:layout_height="@dimen/height"
                 android:layout_width="match_parent"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:id="@+id/unistroke_area">
 
-                <TextView
-                    android:layout_height="wrap_content"
-                    android:layout_width="wrap_content"
-                    android:id="@+id/state"
-                    android:textColor="#C6C6C6"/>
-
-                <TextView
-                    android:id="@+id/info"
+                <android.gesture.GestureOverlayView
+                    android:id="@+id/gestures_overlay"
+                    android:layout_width="0dip"
                     android:layout_height="match_parent"
-                    android:layout_width="match_parent"
-                    android:textColor="#C6C6C6"/>
+                    android:orientation="vertical"
+                    android:gestureStrokeType="single"
+                    android:fadeEnabled="false"
+                    android:background="#222222"
+                    android:layout_weight="4.0"
+                    android:layout_margin="@dimen/layout_margin">
+
+                    <LinearLayout
+                        android:layout_height="match_parent"
+                        android:layout_width="match_parent"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_height="wrap_content"
+                            android:layout_width="wrap_content"
+                            android:id="@+id/state"
+                            android:textColor="#C6C6C6"/>
+
+                        <TextView
+                            android:id="@+id/info"
+                            android:layout_height="match_parent"
+                            android:layout_width="match_parent"
+                            android:textColor="#C6C6C6"/>
+
+                    </LinearLayout>
+
+                </android.gesture.GestureOverlayView>
+
+                <android.gesture.GestureOverlayView
+                    android:id="@+id/gestures_overlay_num"
+                    android:layout_width="0dip"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gestureStrokeType="single"
+                    android:fadeEnabled="false"
+                    android:background="#222222"
+                    android:layout_weight="3.0"
+                    android:layout_margin="@dimen/layout_margin">
+
+                    <LinearLayout
+                        android:layout_height="match_parent"
+                        android:layout_width="match_parent"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_height="wrap_content"
+                            android:layout_width="wrap_content"
+                            android:id="@+id/state_num"
+                            android:textColor="#C6C6C6"/>
+
+                        <TextView
+                            android:id="@+id/info_num"
+                            android:layout_height="match_parent"
+                            android:layout_width="match_parent"
+                            android:textColor="#C6C6C6"/>
+
+                    </LinearLayout>
+
+                </android.gesture.GestureOverlayView>
 
             </LinearLayout>
 
-        </android.gesture.GestureOverlayView>
-
-        <android.gesture.GestureOverlayView
-            android:id="@+id/gestures_overlay_num"
-            android:layout_width="0dip"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gestureStrokeType="single"
-            android:fadeEnabled="false"
-            android:background="#222222"
-            android:layout_weight="2.0"
-            android:layout_margin="@dimen/layout_margin">
-
-            <LinearLayout
-                android:layout_height="match_parent"
-                android:layout_width="match_parent"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_height="wrap_content"
-                    android:layout_width="wrap_content"
-                    android:id="@+id/state_num"
-                    android:textColor="#C6C6C6"/>
-
-                <TextView
-                    android:id="@+id/info_num"
-                    android:layout_height="match_parent"
-                    android:layout_width="match_parent"
-                    android:textColor="#C6C6C6"/>
-
-            </LinearLayout>
-
-        </android.gesture.GestureOverlayView>
+        </FrameLayout>
 
         <FrameLayout
             android:layout_height="match_parent"
@@ -124,23 +140,23 @@
                 android:layout_margin="@dimen/layout_margin">
 
                 <Button
+                    style="?android:attr/buttonStyleSmall"
                     android:layout_height="@dimen/button_size"
                     android:layout_width="@dimen/button_size"
-                    android:text="D"
+                    android:text="DEL"
                     android:width="@dimen/button_size"
                     android:id="@+id/button_del"
-                    android:background="#222222"
-                    android:textColor="#C6C6C6"
-                    android:layout_marginBottom="@dimen/layout_margin"/>
+                    android:layout_marginBottom="@dimen/layout_margin"
+                    android:textScaleX="0.4"/>
 
                 <Button
+                    style="?android:attr/buttonStyleSmall"
                     android:layout_height="@dimen/button_size"
                     android:layout_width="@dimen/button_size"
-                    android:text="E"
+                    android:text="ENTER"
                     android:id="@+id/button_enter"
-                    android:background="#222222"
-                    android:textColor="#C6C6C6"
-                    android:layout_marginTop="@dimen/layout_margin"/>
+                    android:layout_marginTop="@dimen/layout_margin"
+                    android:textScaleX="0.3"/>
 
             </LinearLayout>
 
