@@ -148,34 +148,11 @@ public class GestureInputMethod extends InputMethodService
                 }
             });
 
-
         final Button buttonDel = mView.findViewById(R.id.button_del);
-        buttonDel.setOnClickListener(
-            new OnClickListener()
-            {
-                @Override
-                public void onClick(View v)
-                {
-                    key(KeyEvent.KEYCODE_DEL);
-                    mMetaState = 0;
-                    mSpecial = false;
-                    setState();
-                }
-            });
+        buttonDel.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_DEL));
 
         final Button buttonEnter = mView.findViewById(R.id.button_enter);
-        buttonEnter.setOnClickListener(
-            new OnClickListener()
-            {
-                @Override
-                public void onClick(View v)
-                {
-                    key(KeyEvent.KEYCODE_ENTER);
-                    mMetaState = 0;
-                    mSpecial = false;
-                    setState();
-                }
-            });
+        buttonEnter.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_ENTER));
 
         final Button keyboardButtonH = mKeyboard.findViewById(R.id.keyboard_button_h);
         keyboardButtonH.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_H));
@@ -360,6 +337,15 @@ public class GestureInputMethod extends InputMethodService
                 {
                     getCurrentInputConnection().closeConnection();
                 }
+                break;
+
+            case KeyEvent.KEYCODE_DEL:
+                if (!mSpecial)
+                {
+                    sendKey(keyCode);
+                }
+                mMetaState = 0;
+                mSpecial = false;
                 break;
 
             default:
