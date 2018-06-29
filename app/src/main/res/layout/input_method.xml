@@ -26,6 +26,7 @@
                 android:layout_margin="@dimen/layout_margin">
 
                 <Button
+                    android:tag="ctrl_left"
                     style="?android:attr/buttonStyleSmall"
                     android:layout_height="@dimen/button_size"
                     android:layout_width="@dimen/button_size"
@@ -35,6 +36,7 @@
                     android:background="@drawable/button"/>
 
                 <Button
+                    android:tag="shift_left"
                     style="?android:attr/buttonStyleSmall"
                     android:layout_height="@dimen/button_size"
                     android:layout_width="@dimen/button_size"
@@ -140,6 +142,7 @@
                 android:layout_margin="@dimen/layout_margin">
 
                 <Button
+                    android:tag="del"
                     style="?android:attr/buttonStyleSmall"
                     android:layout_height="@dimen/button_size"
                     android:layout_width="@dimen/button_size"
@@ -150,6 +153,7 @@
                     android:background="@drawable/button"/>
 
                 <Button
+                    android:tag="enter"
                     style="?android:attr/buttonStyleSmall"
                     android:layout_height="@dimen/button_size"
                     android:layout_width="@dimen/button_size"

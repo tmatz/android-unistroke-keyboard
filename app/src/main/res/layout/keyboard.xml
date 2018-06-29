@@ -14,6 +14,7 @@
         android:background="#000000">
 
         <Button
+            android:tag="h"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -22,6 +23,7 @@
             android:background="@drawable/button"/>
 
         <Button
+            android:tag="j"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -30,6 +32,7 @@
             android:background="@drawable/button"/>
 
         <Button
+            android:tag="k"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -38,6 +41,7 @@
             android:background="@drawable/button"/>
 
         <Button
+            android:tag="l"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -46,6 +50,7 @@
             android:background="@drawable/button"/>
 
         <Button
+            android:tag="dpad_up"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -56,6 +61,7 @@
             android:background="@drawable/button"/>
 
         <Button
+            android:tag="move_home"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -86,6 +92,7 @@
             android:visibility="invisible"/>
 
         <Button
+            android:tag="dpad_left"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -103,6 +110,7 @@
             android:visibility="invisible"/>
 
         <Button
+            android:tag="dpad_right"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -113,6 +121,7 @@
             android:background="@drawable/button"/>
 
         <Button
+            android:tag="z"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -121,6 +130,7 @@
             android:background="@drawable/button"/>
 
         <Button
+            android:tag="x"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -129,6 +139,7 @@
             android:background="@drawable/button"/>
 
         <Button
+            android:tag="c"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -137,6 +148,7 @@
             android:background="@drawable/button"/>
 
         <Button
+            android:tag="v"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -145,6 +157,7 @@
             android:background="@drawable/button"/>
 
         <Button
+            android:tag="dpad_down"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -155,6 +168,7 @@
             android:background="@drawable/button"/>
 
         <Button
+            android:tag="move_end"
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"

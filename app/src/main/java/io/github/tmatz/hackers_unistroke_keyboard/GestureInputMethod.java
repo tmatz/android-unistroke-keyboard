@@ -73,8 +73,6 @@ public class GestureInputMethod extends InputMethodService
         final View unistrokeArea = mView.findViewById(R.id.unistroke_area);
 
         mKeyboard = getLayoutInflater().inflate(R.layout.keyboard, null);
-        gestureArea.addView(mKeyboard);
-        mKeyboard.setVisibility(View.INVISIBLE);
 
         final GestureOverlayView overlay = mView.findViewById(R.id.gestures_overlay);
         final TextView info = mView.findViewById(R.id.info);
@@ -125,80 +123,71 @@ public class GestureInputMethod extends InputMethodService
             });
 
         mShift = mView.findViewById(R.id.button_shift);
-        mShift.setOnClickListener(
-            new OnClickListener()
-            {
-                @Override
-                public void onClick(View v)
-                {
-                    mMetaState ^= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
-                    mSpecial = false;
-                    setState();
-                }
-            });
-
         mCtrl = mView.findViewById(R.id.button_ctrl);
-        mCtrl.setOnClickListener(
-            new OnClickListener()
-            {
-                @Override
-                public void onClick(View v)
-                {
-                    mMetaState ^= (KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
-                    mSpecial = false;
-                    setState();
-                }
-            });
+        setKeyClickedListener(mView, R.id.button_shift);
+        setKeyClickedListener(mView, R.id.button_ctrl);
+        setKeyClickedListener(mView, R.id.button_del);
+        setKeyClickedListener(mView, R.id.button_enter);
 
-        final Button buttonDel = mView.findViewById(R.id.button_del);
-        buttonDel.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_DEL));
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_h);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_j);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_k);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_l);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_z);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_x);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_c);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_v);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_home);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_move_end);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_dpad_left);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_dpad_right);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_dpad_up);
+        setKeyClickedListener(mKeyboard, R.id.keyboard_button_dpad_down);
 
-        final Button buttonEnter = mView.findViewById(R.id.button_enter);
-        buttonEnter.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_ENTER));
-
-        final Button keyboardButtonH = mKeyboard.findViewById(R.id.keyboard_button_h);
-        keyboardButtonH.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_H));
-
-        final Button keyboardButtonJ = mKeyboard.findViewById(R.id.keyboard_button_j);
-        keyboardButtonJ.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_J));
-
-        final Button keyboardButtonK = mKeyboard.findViewById(R.id.keyboard_button_k);
-        keyboardButtonK.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_K));
-
-        final Button keyboardButtonL = mKeyboard.findViewById(R.id.keyboard_button_l);
-        keyboardButtonL.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_L));
-
-        final Button keyboardButtonZ = mKeyboard.findViewById(R.id.keyboard_button_z);
-        keyboardButtonZ.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_Z));
-
-        final Button keyboardButtonX = mKeyboard.findViewById(R.id.keyboard_button_x);
-        keyboardButtonX.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_X));
-
-        final Button keyboardButtonC = mKeyboard.findViewById(R.id.keyboard_button_c);
-        keyboardButtonC.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_C));
-
-        final Button keyboardButtonV = mKeyboard.findViewById(R.id.keyboard_button_v);
-        keyboardButtonV.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_V));
-
-        final Button keyboardButtonHome = mKeyboard.findViewById(R.id.keyboard_button_home);
-        keyboardButtonHome.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_MOVE_HOME));
-
-        final Button keyboardButtonEnd = mKeyboard.findViewById(R.id.keyboard_button_move_end);
-        keyboardButtonEnd.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_MOVE_END));
-
-        final Button keyboardButtonLeft = mKeyboard.findViewById(R.id.keyboard_button_dpad_left);
-        keyboardButtonLeft.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_DPAD_LEFT));
-
-        final Button keyboardButtonRight = mKeyboard.findViewById(R.id.keyboard_button_dpad_right);
-        keyboardButtonRight.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_DPAD_RIGHT));
-
-        final Button keyboardButtonUp = mKeyboard.findViewById(R.id.keyboard_button_dpad_up);
-        keyboardButtonUp.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_DPAD_UP));
-
-        final Button keyboardButtonDown = mKeyboard.findViewById(R.id.keyboard_button_dpad_down);
-        keyboardButtonDown.setOnClickListener(new OnKeyListener(KeyEvent.KEYCODE_DPAD_DOWN));
+        gestureArea.addView(mKeyboard);
+        mKeyboard.setVisibility(View.INVISIBLE);
 
         return mView;
+    }
+
+    private void setKeyClickedListener(View root, int id)
+    {
+        final Button button = root.findViewById(id);        
+        if (button.getTag() == null)
+        {
+            return;
+        }
+
+        final String tag = (String)button.getTag();
+        final int keyCode = KeyEvent.keyCodeFromString("KEYCODE_" + tag.toUpperCase());
+
+        if (keyCode != KeyEvent.KEYCODE_UNKNOWN)
+        {
+            button.setOnClickListener(
+                new OnClickListener()
+                {
+                    @Override
+                    public void onClick(View v)
+                    {
+                        key(keyCode);
+                    }
+                });
+        }
+        else
+        {
+            button.setOnClickListener(
+                new OnClickListener()
+                {
+                    @Override
+                    public void onClick(View v)
+                    {
+                        getCurrentInputConnection().commitText(tag, tag.length());
+                        mMetaState = 0;
+                        mSpecial = false;
+                        setState();
+                    }
+                });
+        }
     }
 
     @Override
@@ -545,7 +534,7 @@ public class GestureInputMethod extends InputMethodService
             int keyCode = KeyEvent.keyCodeFromString("KEYCODE_" + name.toUpperCase());
             mInfo.setText(String.format("%s %d", name, keyCode));
 
-            if (keyCode ==  KeyEvent.KEYCODE_UNKNOWN)
+            if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
             {
                 getCurrentInputConnection().commitText(name, name.length());
                 mMetaState = 0;
