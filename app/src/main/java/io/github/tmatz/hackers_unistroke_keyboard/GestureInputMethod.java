@@ -82,7 +82,7 @@ public class GestureInputMethod extends InputMethodService
         final TextView infoNum = mView.findViewById(R.id.info_num);
         overlayNum.addOnGestureListener(new OnGestureUnistrokeListener(mStoreNumber, infoNum));
 
-        final OnTouchListener cursorDetector = new OnTouchGestureListener()
+        final OnTouchListener cursorDetector = new OnTouchCursorGestureListener()
         {
             @Override
             public void onLongPress(MotionEvent event)
@@ -94,6 +94,13 @@ public class GestureInputMethod extends InputMethodService
                 mMetaState = 0;
                 mSpecial = false;
                 setState();
+            }
+
+            @Override
+            public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy)
+            {
+                info.setText(String.format("scroll %f %f", dx, dy));
+                return true;
             }
         };
 
@@ -628,10 +635,75 @@ public class GestureInputMethod extends InputMethodService
         }
     }
 
+    private abstract class OnTouchCursorGestureListener
+    implements OnTouchListener
+    {
+        private final GestureDetector mLongPressDetector;
+        private final GestureDetector mScrollDetector;
+        private boolean mLongPress;
+
+        public OnTouchCursorGestureListener()
+        {
+            mLongPressDetector = new GestureDetector(
+                GestureInputMethod.this,
+                new GestureDetectorOnGestureListener()
+                {
+                    @Override
+                    public boolean onDown(MotionEvent e)
+                    {
+                        mLongPress = false;
+                        return false;
+                    }
+
+                    @Override
+                    public void onLongPress(MotionEvent e)
+                    {
+                        mLongPress = true;
+                        OnTouchCursorGestureListener.this.onLongPress(e);
+                    }
+                });
+
+            mScrollDetector = new GestureDetector(
+                GestureInputMethod.this,
+                new GestureDetectorOnGestureListener()
+                {
+                    @Override
+                    public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy)
+                    {
+                        if (!mLongPress)
+                        {
+                            return false;
+                        }
+
+                        return OnTouchCursorGestureListener.this.onScroll(e1, e2, dx, dy);
+                    }
+                });
+        }
+
+        public void onLongPress(MotionEvent e)
+        {
+        }
+
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean onTouch(View v, MotionEvent e)
+        {
+            boolean result = mLongPressDetector.onTouchEvent(e);
+            if (mLongPress)
+            {
+                result = mScrollDetector.onTouchEvent(e);
+            }
+            return result;
+        }
+    }
+
     private abstract class OnTouchGestureListener
-    implements OnTouchListener,
-    GestureDetector.OnGestureListener,
-    GestureDetector.OnDoubleTapListener
+    extends GestureDetectorOnGestureListener
+    implements OnTouchListener
     {
         private final GestureDetector mGestureDetector;
 
@@ -641,12 +713,24 @@ public class GestureInputMethod extends InputMethodService
             mGestureDetector.setOnDoubleTapListener(this);
         }
 
+        public GestureDetector getGetGestureDetector()
+        {
+            return mGestureDetector;
+        }
+
         @Override
         public boolean onTouch(View view, MotionEvent e)
         {
             return mGestureDetector.onTouchEvent(e);
         }
+    }
 
+
+    private abstract class GestureDetectorOnGestureListener
+    implements
+    GestureDetector.OnGestureListener,
+    GestureDetector.OnDoubleTapListener
+    {
         @Override
         public boolean onSingleTapConfirmed(MotionEvent e)
         {
