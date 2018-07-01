@@ -76,15 +76,33 @@ public class GestureInputMethod extends InputMethodService
 
         final GestureOverlayView overlay = mView.findViewById(R.id.gestures_overlay);
         final TextView info = mView.findViewById(R.id.info);
-        overlay.addOnGestureListener(new OnGestureListener(mStoreAlpabet, info));
+        overlay.addOnGestureListener(new OnGestureUnistrokeListener(mStoreAlpabet, info));
 
         final GestureOverlayView overlayNum = mView.findViewById(R.id.gestures_overlay_num);
         final TextView infoNum = mView.findViewById(R.id.info_num);
-        overlayNum.addOnGestureListener(new OnGestureListener(mStoreNumber, infoNum));
+        overlayNum.addOnGestureListener(new OnGestureUnistrokeListener(mStoreNumber, infoNum));
+
+        final OnTouchListener cursorDetector = new OnTouchGestureListener()
+        {
+            @Override
+            public void onLongPress(MotionEvent event)
+            {
+                info.setText("long press");
+                infoNum.setText("long press");
+                overlay.clear(false);
+                overlayNum.clear(false);
+                mMetaState = 0;
+                mSpecial = false;
+                setState();
+            }
+        };
+
+        overlay.setOnTouchListener(cursorDetector);
+        overlayNum.setOnTouchListener(cursorDetector);
 
         final View leftPanelGesture = mView.findViewById(R.id.left_panel_gesture);
         leftPanelGesture.setOnTouchListener(
-            new OnSwipeTouchListener(this)
+            new OnTouchSwipeListener()
             {
                 @Override
                 public void onSwipeRight()
@@ -104,7 +122,7 @@ public class GestureInputMethod extends InputMethodService
 
         final View rightPanelGesture = mView.findViewById(R.id.right_panel_gesture);
         rightPanelGesture.setOnTouchListener(
-            new OnSwipeTouchListener(this)
+            new OnTouchSwipeListener()
             {
                 @Override
                 public void onSwipeLeft()
@@ -152,42 +170,15 @@ public class GestureInputMethod extends InputMethodService
 
     private void setKeyClickedListener(View root, int id)
     {
-        final Button button = root.findViewById(id);        
-        if (button.getTag() == null)
+        final Button button = root.findViewById(id);
+        final Object tag = button.getTag();
+        if (tag == null)
         {
             return;
         }
 
-        final String tag = (String)button.getTag();
-        final int keyCode = KeyEvent.keyCodeFromString("KEYCODE_" + tag.toUpperCase());
-
-        if (keyCode != KeyEvent.KEYCODE_UNKNOWN)
-        {
-            button.setOnClickListener(
-                new OnClickListener()
-                {
-                    @Override
-                    public void onClick(View v)
-                    {
-                        key(keyCode);
-                    }
-                });
-        }
-        else
-        {
-            button.setOnClickListener(
-                new OnClickListener()
-                {
-                    @Override
-                    public void onClick(View v)
-                    {
-                        getCurrentInputConnection().commitText(tag, tag.length());
-                        mMetaState = 0;
-                        mSpecial = false;
-                        setState();
-                    }
-                });
-        }
+        button.setOnClickListener(
+            new OnKeyListener((String)tag));
     }
 
     @Override
@@ -370,9 +361,9 @@ public class GestureInputMethod extends InputMethodService
         }
     }
 
-    private void sendEvent(KeyEvent event)
+    private void sendEvent(KeyEvent e)
     {
-        getCurrentInputConnection().sendKeyEvent(event);
+        getCurrentInputConnection().sendKeyEvent(e);
     }
 
     private void sendKey(int keyCode)
@@ -439,48 +430,45 @@ public class GestureInputMethod extends InputMethodService
 
     class OnKeyListener implements OnClickListener
     {
+        private final String mTag;
         private final int mKeyCode;
 
-        public OnKeyListener(int keyCode)
+        public OnKeyListener(String tag)
         {
-            mKeyCode = keyCode;
+            mTag = tag;
+            mKeyCode = KeyEvent.keyCodeFromString("KEYCODE_" + mTag.toUpperCase());
         }
 
         @Override
         public void onClick(View v)
         {
-            key(mKeyCode);
+            if (mKeyCode != KeyEvent.KEYCODE_UNKNOWN)
+            {
+                key(mKeyCode);
+            }
+            else
+            {
+                getCurrentInputConnection().commitText(mTag, mTag.length());
+                mMetaState = 0;
+                mSpecial = false;
+                setState();
+            }
         }
     }
 
-    class OnGestureListener implements GestureOverlayView.OnGestureListener
+    class OnGestureUnistrokeListener extends GestureOverlayViewOnGestureListener
     {
         private final GestureLibrary mMainStore;
         private final TextView mInfo;
 
-        public OnGestureListener(GestureLibrary mainStore, TextView info)
+        public OnGestureUnistrokeListener(GestureLibrary mainStore, TextView info)
         {
             mMainStore = mainStore;
             mInfo = info;
         }
 
         @Override
-        public void onGesture(GestureOverlayView overlay, MotionEvent event)
-        {
-        }
-
-        @Override
-        public void onGestureCancelled(GestureOverlayView overlay, MotionEvent event)
-        {
-        }
-
-        @Override
-        public void onGestureStarted(GestureOverlayView overlay, MotionEvent event)
-        {
-        }
-
-        @Override
-        public void onGestureEnded(GestureOverlayView overlay, MotionEvent event)
+        public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
         {
             if (!mStoreReady)
             {
@@ -569,92 +557,10 @@ public class GestureInputMethod extends InputMethodService
         }
     }
 
-    private class OnKeyTouchGestureListener
-    implements OnTouchListener
-    ,GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener
+    private class OnTouchSwipeListener extends OnTouchGestureListener
     {
-        private final GestureDetector mGestureDetector;
-
-        public OnKeyTouchGestureListener()
-        {
-            mGestureDetector = new GestureDetector(GestureInputMethod.this, this);
-            mGestureDetector.setOnDoubleTapListener(this);
-        }
-
-        @Override
-        public boolean onTouch(View p1, MotionEvent p2)
-        {
-            return mGestureDetector.onTouchEvent(p2);
-        }
-
-        @Override
-        public boolean onSingleTapConfirmed(MotionEvent p1)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean onDoubleTap(MotionEvent p1)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean onDoubleTapEvent(MotionEvent p1)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean onDown(MotionEvent p1)
-        {
-            return false;
-        }
-
-        @Override
-        public void onShowPress(MotionEvent p1)
-        {
-        }
-
-        @Override
-        public boolean onSingleTapUp(MotionEvent p1)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean onScroll(MotionEvent p1, MotionEvent p2, float p3, float p4)
-        {
-            return false;
-        }
-
-        @Override
-        public void onLongPress(MotionEvent p1)
-        {
-        }
-
-        @Override
-        public boolean onFling(MotionEvent p1, MotionEvent p2, float p3, float p4)
-        {
-            return false;
-        }
-    }
-
-    private class OnSwipeTouchListener implements OnTouchListener
-    {
-
-        private final GestureDetector mGestureDetector;
-
-        public OnSwipeTouchListener(Context context)
-        {
-            mGestureDetector = new GestureDetector(context, new GestureListener());
-        }
-
-        @Override
-        public boolean onTouch(View p1, MotionEvent p2)
-        {
-            return mGestureDetector.onTouchEvent(p2);
-        }
+        private static final int SWIPE_THRESHOLD = 100;
+        private static final int SWIPE_VELOCITY_THRESHOLD = 100;
 
         public void onSwipeRight()
         {
@@ -672,60 +578,148 @@ public class GestureInputMethod extends InputMethodService
         {
         }
 
-        private class GestureListener extends SimpleOnGestureListener
+        @Override
+        public boolean onDown(MotionEvent e)
         {
+            return true;
+        }
 
-            private static final int SWIPE_THRESHOLD = 100;
-            private static final int SWIPE_VELOCITY_THRESHOLD = 100;
-
-            @Override
-            public boolean onDown(MotionEvent e)
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float vx, float vy)
+        {
+            boolean result = false;
+            try
             {
-                return true;
-            }
-
-            @Override
-            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY)
-            {
-                boolean result = false;
-                try
+                float diffY = e2.getY() - e1.getY();
+                float diffX = e2.getX() - e1.getX();
+                if (Math.abs(diffX) > Math.abs(diffY))
                 {
-                    float diffY = e2.getY() - e1.getY();
-                    float diffX = e2.getX() - e1.getX();
-                    if (Math.abs(diffX) > Math.abs(diffY))
+                    if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(vx) > SWIPE_VELOCITY_THRESHOLD)
                     {
-                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD)
+                        if (diffX > 0)
                         {
-                            if (diffX > 0)
-                            {
-                                onSwipeRight();
-                            }
-                            else
-                            {
-                                onSwipeLeft();
-                            }
-                            result = true;
-                        }
-                    }
-                    else if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD)
-                    {
-                        if (diffY > 0)
-                        {
-                            onSwipeBottom();
+                            onSwipeRight();
                         }
                         else
                         {
-                            onSwipeTop();
+                            onSwipeLeft();
                         }
                         result = true;
                     }
                 }
-                catch (Exception exception)
+                else if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(vy) > SWIPE_VELOCITY_THRESHOLD)
                 {
-                    exception.printStackTrace();
+                    if (diffY > 0)
+                    {
+                        onSwipeBottom();
+                    }
+                    else
+                    {
+                        onSwipeTop();
+                    }
+                    result = true;
                 }
-                return result;
             }
+            catch (Exception exception)
+            {
+                exception.printStackTrace();
+            }
+            return result;
+        }
+    }
+
+    private abstract class OnTouchGestureListener
+    implements OnTouchListener,
+    GestureDetector.OnGestureListener,
+    GestureDetector.OnDoubleTapListener
+    {
+        private final GestureDetector mGestureDetector;
+
+        public OnTouchGestureListener()
+        {
+            mGestureDetector = new GestureDetector(GestureInputMethod.this, this);
+            mGestureDetector.setOnDoubleTapListener(this);
+        }
+
+        @Override
+        public boolean onTouch(View view, MotionEvent e)
+        {
+            return mGestureDetector.onTouchEvent(e);
+        }
+
+        @Override
+        public boolean onSingleTapConfirmed(MotionEvent e)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean onDoubleTap(MotionEvent e)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean onDoubleTapEvent(MotionEvent e)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e)
+        {
+            return false;
+        }
+
+        @Override
+        public void onShowPress(MotionEvent e)
+        {
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy)
+        {
+            return false;
+        }
+
+        @Override
+        public void onLongPress(MotionEvent e)
+        {
+        }
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float vx, float vy)
+        {
+            return false;
+        }
+    }
+
+    private abstract class GestureOverlayViewOnGestureListener implements GestureOverlayView.OnGestureListener
+    {
+        @Override
+        public void onGesture(GestureOverlayView overlay, MotionEvent e)
+        {
+        }
+
+        @Override
+        public void onGestureCancelled(GestureOverlayView overlay, MotionEvent e)
+        {
+        }
+
+        @Override
+        public void onGestureStarted(GestureOverlayView overlay, MotionEvent e)
+        {
+        }
+
+        @Override
+        public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
+        {
         }
     }
 }
