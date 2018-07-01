@@ -82,23 +82,48 @@ public class GestureInputMethod extends InputMethodService
         final TextView infoNum = mView.findViewById(R.id.info_num);
         overlayNum.addOnGestureListener(new OnGestureUnistrokeListener(mStoreNumber, infoNum));
 
+        final float cursorTolerance = getResources().getDimension(R.dimen.cursor_tolerance);
         final OnTouchListener cursorDetector = new OnTouchCursorGestureListener()
         {
+            private float mCursorX;
+            private float mCursorY;
+
             @Override
             public void onLongPress(MotionEvent event)
             {
-                info.setText("long press");
-                infoNum.setText("long press");
                 overlay.clear(false);
                 overlayNum.clear(false);
-                mMetaState = 0;
+                mMetaState &= ~KeyEvent.META_CTRL_MASK;
                 mSpecial = false;
                 setState();
+
+                Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
+                if (vibrator != null)
+                {
+                    vibrator.vibrate(25);
+                }
+
+                mCursorX = event.getX();
+                mCursorY = event.getY();
             }
 
             @Override
             public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy)
             {
+                final float ddx = e2.getX() - mCursorX;
+                final float ddy = e2.getY() - mCursorY;
+                if (Math.abs(ddx) >= cursorTolerance)
+                {
+                    mCursorX += Math.copySign(cursorTolerance, ddx);
+                    key(ddx < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                }
+
+                if (Math.abs(ddy) >= cursorTolerance)
+                {
+                    mCursorY += Math.copySign(cursorTolerance, ddy);
+                    key(ddy < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                }
+
                 info.setText(String.format("scroll %f %f", dx, dy));
                 return true;
             }
