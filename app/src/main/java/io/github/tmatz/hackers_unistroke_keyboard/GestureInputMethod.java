@@ -11,6 +11,7 @@ import android.view.inputmethod.*;
 import android.widget.*;
 import java.io.*;
 import java.util.*;
+import android.mtp.*;
 
 public class GestureInputMethod extends InputMethodService
 {
@@ -41,6 +42,7 @@ public class GestureInputMethod extends InputMethodService
     private TextView mState;
     private boolean mSpecial;
     private int mMetaState;
+    private final Handler mHandler = new Handler();
 
     @Override
     public void onCreate()
@@ -82,55 +84,31 @@ public class GestureInputMethod extends InputMethodService
         final TextView infoNum = mView.findViewById(R.id.info_num);
         overlayNum.addOnGestureListener(new OnGestureUnistrokeListener(mStoreNumber, infoNum));
 
-        final float cursorTolerance = getResources().getDimension(R.dimen.cursor_tolerance);
-        final OnTouchListener cursorDetector = new OnTouchCursorGestureListener()
-        {
-            private float mCursorX;
-            private float mCursorY;
-
-            @Override
-            public void onLongPress(MotionEvent event)
+        overlay.setOnTouchListener(
+            new OnTouchCursorGestureListener()
             {
-                overlay.clear(false);
-                overlayNum.clear(false);
-                mMetaState &= ~KeyEvent.META_CTRL_MASK;
-                mSpecial = false;
-                setState();
-
-                Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
-                if (vibrator != null)
+                @Override
+                public void onStartCursor(MotionEvent event)
                 {
-                    vibrator.vibrate(25);
+                    overlay.clear(false);
+                    overlayNum.clear(false);
+
+                    super.onStartCursor(event);
                 }
+            });
 
-                mCursorX = event.getX();
-                mCursorY = event.getY();
-            }
-
-            @Override
-            public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy)
+        overlayNum.setOnTouchListener(
+            new OnTouchCursorGestureListener()
             {
-                final float ddx = e2.getX() - mCursorX;
-                final float ddy = e2.getY() - mCursorY;
-                if (Math.abs(ddx) >= cursorTolerance)
+                @Override
+                public void onStartCursor(MotionEvent event)
                 {
-                    mCursorX += Math.copySign(cursorTolerance, ddx);
-                    key(ddx < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                    overlay.clear(false);
+                    overlayNum.clear(false);
+
+                    super.onStartCursor(event);
                 }
-
-                if (Math.abs(ddy) >= cursorTolerance)
-                {
-                    mCursorY += Math.copySign(cursorTolerance, ddy);
-                    key(ddy < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-                }
-
-                info.setText(String.format("scroll %f %f", dx, dy));
-                return true;
-            }
-        };
-
-        overlay.setOnTouchListener(cursorDetector);
-        overlayNum.setOnTouchListener(cursorDetector);
+            });
 
         final View leftPanelGesture = mView.findViewById(R.id.left_panel_gesture);
         leftPanelGesture.setOnTouchListener(
@@ -223,6 +201,13 @@ public class GestureInputMethod extends InputMethodService
     public void onStartInputView(EditorInfo info, boolean restarting)
     {
         reloadGestures();
+    }
+
+    @Override
+    public void onFinishInputView(boolean finishingInput)
+    {
+        mHandler.removeCallbacks(null);
+        super.onFinishInputView(finishingInput);
     }
 
     private static File getGesturePath(String fileName)
@@ -441,6 +426,11 @@ public class GestureInputMethod extends InputMethodService
             metaState);
     }
 
+    private int keyCodeFromTag(String tag)
+    {
+        return KeyEvent.keyCodeFromString("KEYCODE_" + tag.toUpperCase());
+    }
+
     static class PredictionResult
     {
         public double score;
@@ -468,7 +458,7 @@ public class GestureInputMethod extends InputMethodService
         public OnKeyListener(String tag)
         {
             mTag = tag;
-            mKeyCode = KeyEvent.keyCodeFromString("KEYCODE_" + mTag.toUpperCase());
+            mKeyCode = keyCodeFromTag(tag);
         }
 
         @Override
@@ -551,7 +541,7 @@ public class GestureInputMethod extends InputMethodService
             }
 
             String name = prediction.name;
-            int keyCode = KeyEvent.keyCodeFromString("KEYCODE_" + name.toUpperCase());
+            int keyCode = keyCodeFromTag(name);
             mInfo.setText(String.format("%s %d", name, keyCode));
 
             if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
@@ -663,9 +653,25 @@ public class GestureInputMethod extends InputMethodService
     private abstract class OnTouchCursorGestureListener
     implements OnTouchListener
     {
+        private final float mCursorTolerance = getResources().getDimension(R.dimen.cursor_tolerance);
+
         private final GestureDetector mLongPressDetector;
-        private final GestureDetector mScrollDetector;
         private boolean mLongPress;
+        private float mOriginX;
+        private float mOriginY;
+        private float mCursorX;
+        private float mCursorY;
+        private boolean mRepeat;
+        private MotionEvent mLastEvent;
+
+        private final Runnable mRunnable = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                repeatMoveCursor();
+            }
+        };
 
         public OnTouchCursorGestureListener()
         {
@@ -684,45 +690,115 @@ public class GestureInputMethod extends InputMethodService
                     public void onLongPress(MotionEvent e)
                     {
                         mLongPress = true;
-                        OnTouchCursorGestureListener.this.onLongPress(e);
+                        onStartCursor(e);
                     }
                 });
-
-            mScrollDetector = new GestureDetector(
-                GestureInputMethod.this,
-                new GestureDetectorOnGestureListener()
-                {
-                    @Override
-                    public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy)
-                    {
-                        if (!mLongPress)
-                        {
-                            return false;
-                        }
-
-                        return OnTouchCursorGestureListener.this.onScroll(e1, e2, dx, dy);
-                    }
-                });
-        }
-
-        public void onLongPress(MotionEvent e)
-        {
-        }
-
-        public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy)
-        {
-            return false;
         }
 
         @Override
         public boolean onTouch(View v, MotionEvent e)
         {
-            boolean result = mLongPressDetector.onTouchEvent(e);
-            if (mLongPress)
+            mLongPressDetector.onTouchEvent(e);
+
+            if (!mLongPress)
             {
-                result = mScrollDetector.onTouchEvent(e);
+                return true;
             }
-            return result;
+
+            switch (e.getAction())
+            {
+                case MotionEvent.ACTION_MOVE:
+                    onMoveCursor(e);
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                    onFinishCursor(e);
+                    mLongPress = false;
+                    break;
+            }
+
+            return true;
+        }
+
+        public void onStartCursor(MotionEvent e)
+        {
+            mMetaState &= ~KeyEvent.META_CTRL_MASK;
+            mSpecial = false;
+            setState();
+
+            Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
+            if (vibrator != null)
+            {
+                vibrator.vibrate(25);
+            }
+
+            mOriginX = e.getRawX();
+            mOriginY = e.getRawY();
+            mCursorX = e.getRawX();
+            mCursorY = e.getRawY();
+            mLastEvent = e;
+            mRepeat = false;
+        }
+
+        public void onMoveCursor(MotionEvent e)
+        {
+            mLastEvent = e;
+            moveCursor();
+        }
+
+        public void onFinishCursor(MotionEvent e)
+        {
+            mHandler.removeCallbacks(mRunnable);
+            mRepeat = false;
+        }
+
+        private void moveCursor()
+        {
+            if (!mRepeat)
+            {
+                repeatMoveCursor();
+            }
+
+            if (!mRepeat)
+            {
+                final float dx = mLastEvent.getRawX() - mCursorX;
+                final float dy = mLastEvent.getRawY() - mCursorY;
+
+                if (Math.abs(dx) >= mCursorTolerance)
+                {
+                    key(dx < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                    mCursorX += Math.copySign(mCursorTolerance, dx);
+                }
+
+                if (Math.abs(dy) >= mCursorTolerance)
+                {
+                    key(dy < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                    mCursorY += Math.copySign(mCursorTolerance, dy);
+                }
+            }
+        }
+
+        private void repeatMoveCursor()
+        {
+            final float dx = mLastEvent.getRawX() - mOriginX;
+            final float dy = mLastEvent.getRawY() - mOriginY;
+
+            mRepeat = false;
+            if (Math.abs(dx) >= mCursorTolerance * 4)
+            {
+                key(dx < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                mRepeat = true;
+            }
+            else if (Math.abs(dy) >= mCursorTolerance * 4)
+            {
+                key(dy < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                mRepeat = true;
+            }
+
+            if (mRepeat)
+            {
+                mHandler.postDelayed(mRunnable, 100);
+            }
         }
     }
 
