@@ -12,6 +12,7 @@ import android.widget.*;
 import java.io.*;
 import java.util.*;
 import android.mtp.*;
+import android.graphics.*;
 
 public class GestureInputMethod extends InputMethodService
 {
@@ -431,6 +432,19 @@ public class GestureInputMethod extends InputMethodService
         return KeyEvent.keyCodeFromString("KEYCODE_" + tag.toUpperCase());
     }
 
+    private static RectF getViewRect(View view)
+    {
+        int[] location = new int[2];
+        view.getLocationOnScreen(location);
+
+        int x = location[0];
+        int y = location[1];
+        int w = view.getWidth();
+        int h = view.getHeight();
+
+        return new RectF(x, y, x + w, y + h);
+    }
+
     static class PredictionResult
     {
         public double score;
@@ -657,12 +671,12 @@ public class GestureInputMethod extends InputMethodService
 
         private final GestureDetector mLongPressDetector;
         private boolean mLongPress;
-        private float mOriginX;
-        private float mOriginY;
         private float mCursorX;
         private float mCursorY;
-        private boolean mRepeat;
+        private boolean mRepeating;
+        private boolean mRepeated;
         private MotionEvent mLastEvent;
+        private View mView;
 
         private final Runnable mRunnable = new Runnable()
         {
@@ -708,6 +722,7 @@ public class GestureInputMethod extends InputMethodService
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_MOVE:
+                    mView = v;
                     onMoveCursor(e);
                     break;
 
@@ -732,12 +747,11 @@ public class GestureInputMethod extends InputMethodService
                 vibrator.vibrate(25);
             }
 
-            mOriginX = e.getRawX();
-            mOriginY = e.getRawY();
             mCursorX = e.getRawX();
             mCursorY = e.getRawY();
             mLastEvent = e;
-            mRepeat = false;
+            mRepeating = false;
+            mRepeated = false;
         }
 
         public void onMoveCursor(MotionEvent e)
@@ -749,17 +763,20 @@ public class GestureInputMethod extends InputMethodService
         public void onFinishCursor(MotionEvent e)
         {
             mHandler.removeCallbacks(mRunnable);
-            mRepeat = false;
+            mRepeating = false;
+            mRepeated = false;
         }
 
         private void moveCursor()
         {
-            if (!mRepeat)
+            if (mRepeating || mRepeated)
             {
-                repeatMoveCursor();
+                return;
             }
 
-            if (!mRepeat)
+            repeatMoveCursor();
+
+            if (!mRepeating)
             {
                 final float dx = mLastEvent.getRawX() - mCursorX;
                 final float dy = mLastEvent.getRawY() - mCursorY;
@@ -780,23 +797,31 @@ public class GestureInputMethod extends InputMethodService
 
         private void repeatMoveCursor()
         {
-            final float dx = mLastEvent.getRawX() - mOriginX;
-            final float dy = mLastEvent.getRawY() - mOriginY;
+            final RectF viewRect = getViewRect(mView);
+            final float ex = mLastEvent.getRawX();
+            final float ey = mLastEvent.getRawY();
 
-            mRepeat = false;
-            if (Math.abs(dx) >= mCursorTolerance * 4)
+            mRepeated = mRepeating;
+            mRepeating = false;
+            if (!viewRect.contains(ex, viewRect.top))
             {
-                key(dx < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
-                mRepeat = true;
+                key(ex < viewRect.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                mRepeating = true;
             }
-            else if (Math.abs(dy) >= mCursorTolerance * 4)
+            if (!viewRect.contains(viewRect.left, ey))
             {
-                key(dy < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-                mRepeat = true;
+                key(ey < viewRect.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                mRepeating = true;
             }
 
-            if (mRepeat)
+            if (mRepeating)
             {
+                mHandler.postDelayed(mRunnable, 100);
+            }
+            else if (mRepeated)
+            {
+                mCursorX = mLastEvent.getRawX();
+                mCursorY = mLastEvent.getRawY();
                 mHandler.postDelayed(mRunnable, 100);
             }
         }
