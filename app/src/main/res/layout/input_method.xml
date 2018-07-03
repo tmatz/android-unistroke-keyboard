@@ -33,7 +33,8 @@
                     android:text="CTRL"
                     android:id="@+id/button_ctrl"
                     android:textScaleX="0.6"
-                    android:background="@drawable/button"/>
+                    android:background="@drawable/button"
+                    android:textColor="@color/text_color"/>
 
                 <Button
                     android:tag="shift_left"
@@ -43,7 +44,8 @@
                     android:text="SHIFT"
                     android:id="@+id/button_shift"
                     android:textScaleX="0.6"
-                    android:background="@drawable/button"/>
+                    android:background="@drawable/button"
+                    android:textColor="@color/text_color"/>
 
             </LinearLayout>
 
@@ -150,7 +152,8 @@
                     android:width="@dimen/button_size"
                     android:id="@+id/button_del"
                     android:textScaleX="0.6"
-                    android:background="@drawable/button"/>
+                    android:background="@drawable/button"
+                    android:textColor="@color/text_color"/>
 
                 <Button
                     android:tag="enter"
@@ -160,7 +163,8 @@
                     android:text="ENTER"
                     android:id="@+id/button_enter"
                     android:textScaleX="0.6"
-                    android:background="@drawable/button"/>
+                    android:background="@drawable/button"
+                    android:textColor="@color/text_color"/>
 
             </LinearLayout>
 

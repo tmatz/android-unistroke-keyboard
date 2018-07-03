@@ -20,7 +20,8 @@
             android:layout_width="wrap_content"
             android:text="H"
             android:id="@+id/keyboard_button_h"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="j"
@@ -29,7 +30,8 @@
             android:layout_width="wrap_content"
             android:text="J"
             android:id="@+id/keyboard_button_j"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="k"
@@ -38,7 +40,8 @@
             android:layout_width="wrap_content"
             android:text="K"
             android:id="@+id/keyboard_button_k"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="l"
@@ -47,7 +50,8 @@
             android:layout_width="wrap_content"
             android:text="L"
             android:id="@+id/keyboard_button_l"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="dpad_up"
@@ -58,7 +62,8 @@
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:id="@+id/keyboard_button_dpad_up"
             android:textScaleX="0.6"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="move_home"
@@ -68,28 +73,32 @@
             android:text="HOME"
             android:id="@+id/keyboard_button_home"
             android:textScaleX="0.6"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:text="B"
-            android:visibility="invisible"/>
+            android:visibility="invisible"
+            android:textColor="@color/text_color"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:text="B"
-            android:visibility="invisible"/>
+            android:visibility="invisible"
+            android:textColor="@color/text_color"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:text="B"
-            android:visibility="invisible"/>
+            android:visibility="invisible"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="dpad_left"
@@ -100,14 +109,16 @@
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:id="@+id/keyboard_button_dpad_left"
             android:textScaleX="0.6"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             style="?android:attr/buttonStyleSmall"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:text="B"
-            android:visibility="invisible"/>
+            android:visibility="invisible"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="dpad_right"
@@ -118,7 +129,8 @@
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:id="@+id/keyboard_button_dpad_right"
             android:textScaleX="0.6"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="z"
@@ -127,7 +139,8 @@
             android:layout_width="wrap_content"
             android:text="Z"
             android:id="@+id/keyboard_button_z"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="x"
@@ -136,7 +149,8 @@
             android:layout_width="wrap_content"
             android:text="X"
             android:id="@+id/keyboard_button_x"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="c"
@@ -145,7 +159,8 @@
             android:layout_width="wrap_content"
             android:text="C"
             android:id="@+id/keyboard_button_c"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="v"
@@ -154,7 +169,8 @@
             android:layout_width="wrap_content"
             android:text="V"
             android:id="@+id/keyboard_button_v"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="dpad_down"
@@ -165,7 +181,8 @@
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:id="@+id/keyboard_button_dpad_down"
             android:textScaleX="0.6"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
         <Button
             android:tag="move_end"
@@ -175,7 +192,8 @@
             android:text="END"
             android:id="@+id/keyboard_button_move_end"
             android:textScaleX="0.6"
-            android:background="@drawable/button"/>
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
 
     </GridLayout>
 

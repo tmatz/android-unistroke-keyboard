@@ -4,4 +4,5 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
     <color name="gesture_color">#FFFFFF00</color>
+    <color name="text_color">#c0c0c0</color>
 </resources>
