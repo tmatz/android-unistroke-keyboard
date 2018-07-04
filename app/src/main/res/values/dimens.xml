@@ -2,6 +2,6 @@
 <resources>
     <dimen name="button_size">40dip</dimen>
     <dimen name="cursor_tolerance">20dip</dimen>
-    <dimen name="height">160dip</dimen>
+    <dimen name="height">140dip</dimen>
     <dimen name="layout_margin">3dip</dimen>
 </resources>

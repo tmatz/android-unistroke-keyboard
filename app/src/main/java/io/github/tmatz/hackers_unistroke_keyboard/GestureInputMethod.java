@@ -683,7 +683,7 @@ public class GestureInputMethod extends InputMethodService
             @Override
             public void run()
             {
-                repeatMoveCursor();
+                repeatMoveCursor(true);
             }
         };
 
@@ -774,7 +774,7 @@ public class GestureInputMethod extends InputMethodService
                 return;
             }
 
-            repeatMoveCursor();
+            repeatMoveCursor(false);
 
             if (!mRepeating)
             {
@@ -795,7 +795,7 @@ public class GestureInputMethod extends InputMethodService
             }
         }
 
-        private void repeatMoveCursor()
+        private void repeatMoveCursor(boolean fromPost)
         {
             final RectF viewRect = getViewRect(mView);
             final float ex = mLastEvent.getRawX();
@@ -814,15 +814,14 @@ public class GestureInputMethod extends InputMethodService
                 mRepeating = true;
             }
 
-            if (mRepeating)
+            if (mRepeating || mRepeated)
             {
                 mHandler.postDelayed(mRunnable, 100);
             }
-            else if (mRepeated)
+            else if (fromPost)
             {
                 mCursorX = mLastEvent.getRawX();
                 mCursorY = mLastEvent.getRawY();
-                mHandler.postDelayed(mRunnable, 100);
             }
         }
     }
