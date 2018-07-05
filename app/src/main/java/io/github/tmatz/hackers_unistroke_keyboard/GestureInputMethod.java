@@ -1,18 +1,15 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
-import android.content.*;
 import android.gesture.*;
+import android.graphics.*;
 import android.inputmethodservice.*;
 import android.os.*;
 import android.view.*;
-import android.view.GestureDetector.*;
 import android.view.View.*;
 import android.view.inputmethod.*;
 import android.widget.*;
 import java.io.*;
 import java.util.*;
-import android.mtp.*;
-import android.graphics.*;
 
 public class GestureInputMethod extends InputMethodService
 {
@@ -43,6 +40,7 @@ public class GestureInputMethod extends InputMethodService
     private TextView mState;
     private boolean mSpecial;
     private int mMetaState;
+    private boolean mShiftUsed;
     private final Handler mHandler = new Handler();
 
     @Override
@@ -153,43 +151,31 @@ public class GestureInputMethod extends InputMethodService
 
         mShift = mView.findViewById(R.id.button_shift);
         mCtrl = mView.findViewById(R.id.button_ctrl);
-        setKeyClickedListener(mView, R.id.button_shift);
-        setKeyClickedListener(mView, R.id.button_ctrl);
-        setKeyClickedListener(mView, R.id.button_del);
-        setKeyClickedListener(mView, R.id.button_enter);
 
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_h);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_j);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_k);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_l);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_z);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_x);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_c);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_v);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_home);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_move_end);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_dpad_left);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_dpad_right);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_dpad_up);
-        setKeyClickedListener(mKeyboard, R.id.keyboard_button_dpad_down);
+        setupKey(mView, R.id.button_shift);
+        setupKey(mView, R.id.button_ctrl);
+        setupKey(mView, R.id.button_del);
+        setupKey(mView, R.id.button_enter);
+
+        setupKey(mKeyboard, R.id.keyboard_button_h);
+        setupKey(mKeyboard, R.id.keyboard_button_j);
+        setupKey(mKeyboard, R.id.keyboard_button_k);
+        setupKey(mKeyboard, R.id.keyboard_button_l);
+        setupKey(mKeyboard, R.id.keyboard_button_z);
+        setupKey(mKeyboard, R.id.keyboard_button_x);
+        setupKey(mKeyboard, R.id.keyboard_button_c);
+        setupKey(mKeyboard, R.id.keyboard_button_v);
+        setupKey(mKeyboard, R.id.keyboard_button_home);
+        setupKey(mKeyboard, R.id.keyboard_button_move_end);
+        setupKey(mKeyboard, R.id.keyboard_button_dpad_left);
+        setupKey(mKeyboard, R.id.keyboard_button_dpad_right);
+        setupKey(mKeyboard, R.id.keyboard_button_dpad_up);
+        setupKey(mKeyboard, R.id.keyboard_button_dpad_down);
 
         gestureArea.addView(mKeyboard);
         mKeyboard.setVisibility(View.INVISIBLE);
 
         return mView;
-    }
-
-    private void setKeyClickedListener(View root, int id)
-    {
-        final Button button = root.findViewById(id);
-        final Object tag = button.getTag();
-        if (tag == null)
-        {
-            return;
-        }
-
-        button.setOnClickListener(
-            new OnKeyListener((String)tag));
     }
 
     @Override
@@ -209,6 +195,18 @@ public class GestureInputMethod extends InputMethodService
     {
         mHandler.removeCallbacks(null);
         super.onFinishInputView(finishingInput);
+    }
+
+    private void setupKey(View root, int id)
+    {
+        final Button button = root.findViewById(id);
+        final Object tag = button.getTag();
+        if (tag == null)
+        {
+            return;
+        }
+
+        button.setOnTouchListener(new OnKeyListener((String)tag));
     }
 
     private static File getGesturePath(String fileName)
@@ -300,7 +298,23 @@ public class GestureInputMethod extends InputMethodService
         }
     }
 
+    private static boolean isShiftOn(int metaState)
+    {
+        return (metaState & KeyEvent.META_SHIFT_MASK) != 0;
+    }
+
+    private static boolean isCtrlOn(int metaState)
+    {
+        return (metaState & KeyEvent.META_CTRL_MASK) != 0;
+    }
+
     private void key(int keyCode)
+    {
+        keyDown(keyCode);
+        keyUp(keyCode);
+    }
+
+    private void keyDown(int keyCode)
     {
         switch (keyCode)
         {
@@ -310,12 +324,70 @@ public class GestureInputMethod extends InputMethodService
             case KeyEvent.KEYCODE_SHIFT_LEFT:
             case KeyEvent.KEYCODE_SHIFT_RIGHT:
                 mMetaState ^= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
-                mSpecial = false;
+                mShiftUsed = false;
+                if (isShiftOn(mMetaState))
+                {
+                    sendKeyDown(keyCode, mMetaState & ~KeyEvent.META_SHIFT_MASK);
+                }
+                else
+                {
+                    sendKeyUp(keyCode, mMetaState);
+                }
                 break;
 
             case KeyEvent.KEYCODE_CTRL_LEFT:
             case KeyEvent.KEYCODE_CTRL_RIGHT:
+                if (isShiftOn(mMetaState) && mShiftUsed)
+                {
+                    mMetaState &= ~KeyEvent.META_SHIFT_MASK;
+                    mShiftUsed = false;
+                    sendKeyUp(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState);
+                }
+
                 mMetaState ^= (KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
+                if (isCtrlOn(mMetaState))
+                {
+                    sendKeyDown(keyCode, mMetaState & ~KeyEvent.META_CTRL_MASK);
+                }
+                else
+                {
+                    sendKeyUp(keyCode, mMetaState);
+                }
+                break;
+
+            case KeyEvent.KEYCODE_DEL:
+                if (!mSpecial)
+                {
+                    if (isShiftOn(mMetaState))
+                    {
+                        mMetaState &= ~KeyEvent.META_SHIFT_MASK;
+                        sendKeyUp(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState);
+                    }
+
+                    sendKeyDown(keyCode, mMetaState);
+                }
+                break;
+
+            default:
+                sendKeyDown(keyCode, mMetaState);
+                break;
+        }
+
+        setState();
+    }
+
+    private void keyUp(int keyCode)
+    {
+        int lastMetaState = mMetaState;
+        switch (keyCode)
+        {
+            case KeyEvent.KEYCODE_UNKNOWN:
+                break;
+
+            case KeyEvent.KEYCODE_SHIFT_LEFT:
+            case KeyEvent.KEYCODE_SHIFT_RIGHT:
+            case KeyEvent.KEYCODE_CTRL_LEFT:
+            case KeyEvent.KEYCODE_CTRL_RIGHT:
                 mSpecial = false;
                 break;
 
@@ -323,44 +395,75 @@ public class GestureInputMethod extends InputMethodService
             case KeyEvent.KEYCODE_DPAD_RIGHT:
             case KeyEvent.KEYCODE_DPAD_UP:
             case KeyEvent.KEYCODE_DPAD_DOWN:
-                sendKey(keyCode);
-                mMetaState &= ~KeyEvent.META_CTRL_MASK;
+                sendKeyUp(keyCode, mMetaState);
+                mMetaState &= KeyEvent.META_SHIFT_MASK;
+                mShiftUsed = true;
                 mSpecial = false;
-                break;
-
-            case KeyEvent.KEYCODE_ENTER:
-                int action = getCurrentInputEditorInfo().actionId;
-                sendKey(keyCode);
-                mMetaState = 0;
-                mSpecial = false;
-                if (action == EditorInfo.IME_ACTION_DONE)
-                {
-                    getCurrentInputConnection().closeConnection();
-                }
                 break;
 
             case KeyEvent.KEYCODE_DEL:
                 if (!mSpecial)
                 {
-                    sendKey(keyCode);
+                    sendKeyUp(keyCode, mMetaState);
                 }
                 mMetaState = 0;
                 mSpecial = false;
                 break;
 
             default:
-                sendKey(keyCode);
+                sendKeyUp(keyCode, mMetaState);
                 mMetaState = 0;
                 mSpecial = false;
                 break;
         }
 
+        if (isShiftOn(lastMetaState) && !isShiftOn(mMetaState))
+        {
+            lastMetaState &= ~KeyEvent.META_SHIFT_MASK;
+            sendKeyUp(KeyEvent.KEYCODE_SHIFT_LEFT, lastMetaState);
+        }
+
+        if (isCtrlOn(lastMetaState) && !isCtrlOn(mMetaState))
+        {
+            lastMetaState &= ~KeyEvent.META_CTRL_MASK;
+            sendKeyUp(KeyEvent.KEYCODE_CTRL_LEFT, lastMetaState);
+        }
+
         setState();
+
+        if (keyCode == KeyEvent.KEYCODE_ENTER)
+        {
+            switch (getCurrentInputEditorInfo().actionId)
+            {
+                case EditorInfo.IME_ACTION_DONE:
+                    getCurrentInputConnection().closeConnection();
+                    break;
+            }
+        }
+    }
+
+    private void keyRepeat(int keyCode)
+    {
+        switch (keyCode)
+        {
+            case KeyEvent.KEYCODE_UNKNOWN:
+                break;
+
+            case KeyEvent.KEYCODE_SHIFT_LEFT:
+            case KeyEvent.KEYCODE_SHIFT_RIGHT:
+            case KeyEvent.KEYCODE_CTRL_LEFT:
+            case KeyEvent.KEYCODE_CTRL_RIGHT:
+                break;
+
+            default:
+                sendKeyRepeat(keyCode, mMetaState);
+                break;
+        }
     }
 
     private void setState()
     {
-        if ((mMetaState & KeyEvent.META_SHIFT_MASK) != 0)
+        if (isShiftOn(mMetaState))
         {
             mShift.setBackgroundResource(R.drawable.button_active);
         }
@@ -369,7 +472,7 @@ public class GestureInputMethod extends InputMethodService
             mShift.setBackgroundResource(R.drawable.button);
         }
 
-        if ((mMetaState & KeyEvent.META_CTRL_MASK) != 0)
+        if (isCtrlOn(mMetaState))
         {
             mCtrl.setBackgroundResource(R.drawable.button_active);
         }
@@ -384,35 +487,19 @@ public class GestureInputMethod extends InputMethodService
         getCurrentInputConnection().sendKeyEvent(e);
     }
 
-    private void sendKey(int keyCode)
+    private void sendKeyDown(int keyCode, int metaState)
     {
-        KeyEvent shift = null;
-        if ((mMetaState & KeyEvent.META_SHIFT_MASK) != 0)
-        {
-            shift = toKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, 0);
-            sendEvent(shift);
-        }
+        sendEvent(toKeyEvent(KeyEvent.ACTION_DOWN, keyCode, metaState));
+    }
 
-        KeyEvent ctrl = null;
-        if ((mMetaState & KeyEvent.META_CTRL_MASK) != 0)
-        {
-            ctrl = toKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_CTRL_LEFT, mMetaState & KeyEvent.META_SHIFT_MASK);
-            sendEvent(ctrl);
-        }
+    private void sendKeyUp(int keyCode, int metaState)
+    {
+        sendEvent(toKeyEvent(KeyEvent.ACTION_UP, keyCode, metaState));
+    }
 
-        KeyEvent event = toKeyEvent(KeyEvent.ACTION_DOWN, keyCode, mMetaState);
-        sendEvent(event);
-        sendEvent(KeyEvent.changeAction(event, KeyEvent.ACTION_UP));
-
-        if (ctrl != null)
-        {
-            sendEvent(KeyEvent.changeAction(ctrl, KeyEvent.ACTION_UP));
-        }
-
-        if (shift != null)
-        {
-            sendEvent(KeyEvent.changeAction(shift, KeyEvent.ACTION_UP));
-        }
+    private void sendKeyRepeat(int keyCode, int metaState)
+    {
+        sendEvent(toKeyEvent(KeyEvent.ACTION_MULTIPLE, keyCode, metaState));
     }
 
     private KeyEvent toKeyEvent(int action, int keyCode, int metaState)
@@ -445,7 +532,7 @@ public class GestureInputMethod extends InputMethodService
         return new RectF(x, y, x + w, y + h);
     }
 
-    static class PredictionResult
+    private static class PredictionResult
     {
         public double score;
         public String name;
@@ -464,31 +551,57 @@ public class GestureInputMethod extends InputMethodService
         }
     }
 
-    class OnKeyListener implements OnClickListener
+    private class OnKeyListener implements OnTouchListener
     {
-        private final String mTag;
         private final int mKeyCode;
+        private boolean mKeyDown;
+
+        private final Runnable mRunnable = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                keyRepeat(mKeyCode);
+                mHandler.postDelayed(mRunnable, 100);
+            }
+        };
 
         public OnKeyListener(String tag)
         {
-            mTag = tag;
             mKeyCode = keyCodeFromTag(tag);
         }
 
         @Override
-        public void onClick(View v)
+        public boolean onTouch(View v, MotionEvent e)
         {
-            if (mKeyCode != KeyEvent.KEYCODE_UNKNOWN)
+            final RectF rect = getViewRect(v);
+            switch (e.getAction())
             {
-                key(mKeyCode);
+                case MotionEvent.ACTION_DOWN:
+                    if (!rect.contains(e.getRawX(), e.getRawY()))
+                    {
+                        return false;
+                    }
+
+                    keyDown(mKeyCode);
+                    mKeyDown = true;
+                    mHandler.postDelayed(mRunnable, 400);
+                    return true;
+
+                case MotionEvent.ACTION_UP:
+                    if (!mKeyDown)
+                    {
+                        return false;
+                    }
+
+
+                    mHandler.removeCallbacks(mRunnable);
+                    keyUp(mKeyCode);
+                    mKeyDown = false;
+                    return true;
             }
-            else
-            {
-                getCurrentInputConnection().commitText(mTag, mTag.length());
-                mMetaState = 0;
-                mSpecial = false;
-                setState();
-            }
+
+            return false;
         }
     }
 
@@ -536,17 +649,16 @@ public class GestureInputMethod extends InputMethodService
                 if (mSpecial)
                 {
                     mInfo.setText("period");
-                    sendKey(KeyEvent.KEYCODE_PERIOD);
-                    mSpecial = false;
+                    key(KeyEvent.KEYCODE_PERIOD);
+                    return;
                 }
                 else
                 {
                     mInfo.setText("special");
                     mSpecial = true;
+                    setState();
+                    return;
                 }
-
-                setState();
-                return;
             }
 
             if (prediction.score < 1.0)
@@ -703,8 +815,11 @@ public class GestureInputMethod extends InputMethodService
                     @Override
                     public void onLongPress(MotionEvent e)
                     {
-                        mLongPress = true;
-                        onStartCursor(e);
+                        if (!mSpecial)
+                        {
+                            mLongPress = true;
+                            onStartCursor(e);
+                        }
                     }
                 });
         }
