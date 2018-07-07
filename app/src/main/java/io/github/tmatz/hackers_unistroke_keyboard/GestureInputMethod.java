@@ -39,6 +39,7 @@ extends InputMethodService
     private long mTimestampControlSingle;
 
     private View mView;
+    private ViewGroup mGestureArea;
     private View mKeyboard;
     private Button mShift;
     private Button mCtrl;
@@ -74,10 +75,8 @@ extends InputMethodService
         reloadGestures();
 
         mView = getLayoutInflater().inflate(R.layout.input_method, null);
-        final ViewGroup gestureArea = mView.findViewById(R.id.gesture_area);
+        mGestureArea = mView.findViewById(R.id.gesture_area);
         final View unistrokeArea = mView.findViewById(R.id.unistroke_area);
-
-        mKeyboard = getLayoutInflater().inflate(R.layout.keyboard, null);
 
         final GestureOverlayView overlay = mView.findViewById(R.id.gestures_overlay);
         final TextView info = mView.findViewById(R.id.info);
@@ -143,6 +142,8 @@ extends InputMethodService
                 }
             });
 
+        mKeyboard = getLayoutInflater().inflate(R.layout.keyboard, null);
+
         setupKey(mKeyboard, R.id.keyboard_button_h);
         setupKey(mKeyboard, R.id.keyboard_button_j);
         setupKey(mKeyboard, R.id.keyboard_button_k);
@@ -159,7 +160,7 @@ extends InputMethodService
         setupKey(mKeyboard, R.id.keyboard_button_dpad_down);
         setupKey(mKeyboard, R.id.keyboard_button_forward_del);
 
-        gestureArea.addView(mKeyboard);
+        mGestureArea.addView(mKeyboard);
         mKeyboard.setVisibility(View.INVISIBLE);
 
         return mView;
@@ -331,56 +332,70 @@ extends InputMethodService
 
     private void keyDown(int keyCode)
     {
-        switch (keyCode)
+        if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
         {
-            case KeyEvent.KEYCODE_UNKNOWN:
-                break;
-
-            case KeyEvent.KEYCODE_CTRL_LEFT:
-            case KeyEvent.KEYCODE_CTRL_RIGHT:
-                if (isShiftOn(mMetaState) && mShiftUsed)
-                {
-                    mMetaState &= ~KeyEvent.META_SHIFT_MASK;
-                    mShiftUsed = false;
-                }
-
-                mMetaState ^= (KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
-                break;
-
-            case KeyEvent.KEYCODE_SHIFT_LEFT:
-            case KeyEvent.KEYCODE_SHIFT_RIGHT:
-                if (isCapsLockOn(mMetaState))
-                {
-                    mMetaState &= ~KeyEvent.META_CAPS_LOCK_ON;
-                }
-                else
-                {
-                    mMetaState ^= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
-                }
-                mShiftUsed = false;
-                break;
-
-            case KeyEvent.KEYCODE_ALT_LEFT:
-            case KeyEvent.KEYCODE_ALT_RIGHT:
-                mMetaState ^= (KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
-                break;
-
-            case KeyEvent.KEYCODE_DEL:
-            case KeyEvent.KEYCODE_FORWARD_DEL:
-                if (!mSpecial)
-                {
-                    if (isShiftOn(mMetaState))
+            return;
+        }
+        else if (KeyEvent.isModifierKey(keyCode))
+        {
+            switch (keyCode)
+            {
+                case KeyEvent.KEYCODE_CTRL_LEFT:
+                case KeyEvent.KEYCODE_CTRL_RIGHT:
+                    if (isShiftOn(mMetaState) && mShiftUsed)
                     {
                         mMetaState &= ~KeyEvent.META_SHIFT_MASK;
+                        mShiftUsed = false;
+                    }
+
+                    mMetaState ^= (KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
+                    break;
+
+                case KeyEvent.KEYCODE_SHIFT_LEFT:
+                case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                    if (isCapsLockOn(mMetaState))
+                    {
+                        mMetaState &= ~KeyEvent.META_CAPS_LOCK_ON;
+                    }
+                    else
+                    {
+                        mMetaState ^= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
+                    }
+                    mShiftUsed = false;
+                    break;
+
+                case KeyEvent.KEYCODE_ALT_LEFT:
+                case KeyEvent.KEYCODE_ALT_RIGHT:
+                    mMetaState ^= (KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
+                    break;
+            }
+        }
+        else
+        {
+            switch (keyCode)
+            {
+                case KeyEvent.KEYCODE_DEL:
+                case KeyEvent.KEYCODE_FORWARD_DEL:
+                    if (!mSpecial)
+                    {
+                        if (isShiftOn(mMetaState))
+                        {
+                            mMetaState &= ~KeyEvent.META_SHIFT_MASK;
+                        }
+
+                        sendKeyDown(keyCode, mMetaState);
+                    }
+                    break;
+
+                default:
+                    if (isShiftOn(mMetaState))
+                    {
+                        sendKeyDown(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~KeyEvent.META_SHIFT_MASK);
                     }
 
                     sendKeyDown(keyCode, mMetaState);
-                }
-                break;
-
-            default:
-                sendKeyDown(keyCode, mMetaState);
-                break;
+                    break;
+            }
         }
 
         setState();
@@ -388,48 +403,64 @@ extends InputMethodService
 
     private void keyUp(int keyCode)
     {
-        switch (keyCode)
+        if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
         {
-            case KeyEvent.KEYCODE_UNKNOWN:
-                break;
+            return;
+        }
+        else if (KeyEvent.isModifierKey(keyCode))
+        {
+            switch (keyCode)
+            {
+                case KeyEvent.KEYCODE_CTRL_LEFT:
+                case KeyEvent.KEYCODE_CTRL_RIGHT:
+                case KeyEvent.KEYCODE_SHIFT_LEFT:
+                case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                case KeyEvent.KEYCODE_ALT_LEFT:
+                case KeyEvent.KEYCODE_ALT_RIGHT:
+                    mSpecial = false;
+                    break;
 
-            case KeyEvent.KEYCODE_CTRL_LEFT:
-            case KeyEvent.KEYCODE_CTRL_RIGHT:
-            case KeyEvent.KEYCODE_SHIFT_LEFT:
-            case KeyEvent.KEYCODE_SHIFT_RIGHT:
-            case KeyEvent.KEYCODE_ALT_LEFT:
-            case KeyEvent.KEYCODE_ALT_RIGHT:
-                mSpecial = false;
-                break;
+            }
+        }
+        else
+        {
+            switch (keyCode)
+            {
 
-            case KeyEvent.KEYCODE_DPAD_LEFT:
-            case KeyEvent.KEYCODE_DPAD_RIGHT:
-            case KeyEvent.KEYCODE_DPAD_UP:
-            case KeyEvent.KEYCODE_DPAD_DOWN:
-                sendKeyUp(keyCode, mMetaState);
-                mMetaState &= KeyEvent.META_SHIFT_MASK | KeyEvent.META_CAPS_LOCK_ON;
-                if (isShiftOn(mMetaState))
-                {
-                    mShiftUsed = true;
-                }
-                mSpecial = false;
-                break;
-
-            case KeyEvent.KEYCODE_DEL:
-            case KeyEvent.KEYCODE_FORWARD_DEL:
-                if (!mSpecial)
-                {
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                case KeyEvent.KEYCODE_DPAD_UP:
+                case KeyEvent.KEYCODE_DPAD_DOWN:
                     sendKeyUp(keyCode, mMetaState);
-                }
-                mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
-                mSpecial = false;
-                break;
+                    mMetaState &= KeyEvent.META_SHIFT_MASK | KeyEvent.META_CAPS_LOCK_ON;
+                    if (isShiftOn(mMetaState))
+                    {
+                        mShiftUsed = true;
+                    }
+                    mSpecial = false;
+                    break;
 
-            default:
-                sendKeyUp(keyCode, mMetaState);
-                mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
-                mSpecial = false;
-                break;
+                case KeyEvent.KEYCODE_DEL:
+                case KeyEvent.KEYCODE_FORWARD_DEL:
+                    if (!mSpecial)
+                    {
+                        sendKeyUp(keyCode, mMetaState);
+                    }
+                    mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
+                    mSpecial = false;
+                    break;
+
+                default:
+                    sendKeyUp(keyCode, mMetaState);
+                    mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
+                    mSpecial = false;
+                    break;
+            }
+
+            if (isShiftOn(mMetaState))
+            {
+                sendKeyUp(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~KeyEvent.META_SHIFT_MASK);
+            }
         }
 
         setState();
@@ -1016,7 +1047,7 @@ extends InputMethodService
 
         private void repeatMoveCursor(boolean fromPost)
         {
-            final RectF viewRect = getViewRect(mView);
+            final RectF viewRect = getViewRect(mGestureArea);
             final float ex = mLastEvent.getRawX();
             final float ey = mLastEvent.getRawY();
 
@@ -1033,9 +1064,13 @@ extends InputMethodService
                 mRepeating = true;
             }
 
-            if (mRepeating || mRepeated)
+            if (mRepeating)
             {
                 mHandler.postDelayed(mRunnable, 100);
+            }
+            else if (mRepeated)
+            {
+                mHandler.postDelayed(mRunnable, 200);
             }
             else if (fromPost)
             {
