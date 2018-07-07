@@ -11,7 +11,8 @@ import android.widget.*;
 import java.io.*;
 import java.util.*;
 
-public class GestureInputMethod extends InputMethodService
+public class GestureInputMethod
+extends InputMethodService
 {
     private static final int KEYREPEAT_DELAY_FIRST_MS = 400;
     private static final int KEYREPEAT_DELAY_MS = 100;
@@ -186,13 +187,31 @@ public class GestureInputMethod extends InputMethodService
     private void setupKey(View root, int id)
     {
         final Button button = root.findViewById(id);
-        final Object tag = button.getTag();
+        final String tag = (String)button.getTag();
         if (tag == null)
         {
             return;
         }
 
-        button.setOnTouchListener(new OnKeyListener((String)tag));
+        final int keyCode = keyCodeFromTag(tag);
+        if (KeyEvent.isModifierKey(keyCode))
+        {
+            switch (keyCode)
+            {
+                case KeyEvent.KEYCODE_SHIFT_LEFT:
+                case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                    button.setOnTouchListener(new OnShiftKeyListener(tag));
+                    break;
+
+                default:
+                    button.setOnTouchListener(new OnModifierKeyListener(tag));
+                    break;
+            }
+        }
+        else
+        {
+            button.setOnTouchListener(new OnKeyListener(tag));
+        }
     }
 
     private static File getGesturePath(String fileName)
@@ -284,6 +303,11 @@ public class GestureInputMethod extends InputMethodService
         }
     }
 
+    private static boolean isCapsLockOn(int metaState)
+    {
+        return (metaState & KeyEvent.META_CAPS_LOCK_ON) != 0;
+    }
+
     private static boolean isShiftOn(int metaState)
     {
         return (metaState & KeyEvent.META_SHIFT_MASK) != 0;
@@ -312,51 +336,33 @@ public class GestureInputMethod extends InputMethodService
             case KeyEvent.KEYCODE_UNKNOWN:
                 break;
 
-            case KeyEvent.KEYCODE_SHIFT_LEFT:
-            case KeyEvent.KEYCODE_SHIFT_RIGHT:
-                mMetaState ^= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
-                mShiftUsed = false;
-                if (isShiftOn(mMetaState))
-                {
-                    sendKeyDown(keyCode, mMetaState & ~KeyEvent.META_SHIFT_MASK);
-                }
-                else
-                {
-                    sendKeyUp(keyCode, mMetaState);
-                }
-                break;
-
-            case KeyEvent.KEYCODE_ALT_LEFT:
-            case KeyEvent.KEYCODE_ALT_RIGHT:
-                mMetaState ^= (KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
-                if (isAltOn(mMetaState))
-                {
-                    sendKeyDown(keyCode, mMetaState & ~KeyEvent.META_ALT_MASK);
-                }
-                else
-                {
-                    sendKeyUp(keyCode, mMetaState);
-                }
-                break;
-
             case KeyEvent.KEYCODE_CTRL_LEFT:
             case KeyEvent.KEYCODE_CTRL_RIGHT:
                 if (isShiftOn(mMetaState) && mShiftUsed)
                 {
                     mMetaState &= ~KeyEvent.META_SHIFT_MASK;
                     mShiftUsed = false;
-                    sendKeyUp(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState);
                 }
 
                 mMetaState ^= (KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
-                if (isCtrlOn(mMetaState))
+                break;
+
+            case KeyEvent.KEYCODE_SHIFT_LEFT:
+            case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                if (isCapsLockOn(mMetaState))
                 {
-                    sendKeyDown(keyCode, mMetaState & ~KeyEvent.META_CTRL_MASK);
+                    mMetaState &= ~KeyEvent.META_CAPS_LOCK_ON;
                 }
                 else
                 {
-                    sendKeyUp(keyCode, mMetaState);
+                    mMetaState ^= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
                 }
+                mShiftUsed = false;
+                break;
+
+            case KeyEvent.KEYCODE_ALT_LEFT:
+            case KeyEvent.KEYCODE_ALT_RIGHT:
+                mMetaState ^= (KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
                 break;
 
             case KeyEvent.KEYCODE_DEL:
@@ -366,7 +372,6 @@ public class GestureInputMethod extends InputMethodService
                     if (isShiftOn(mMetaState))
                     {
                         mMetaState &= ~KeyEvent.META_SHIFT_MASK;
-                        sendKeyUp(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState);
                     }
 
                     sendKeyDown(keyCode, mMetaState);
@@ -383,16 +388,15 @@ public class GestureInputMethod extends InputMethodService
 
     private void keyUp(int keyCode)
     {
-        int lastMetaState = mMetaState;
         switch (keyCode)
         {
             case KeyEvent.KEYCODE_UNKNOWN:
                 break;
 
-            case KeyEvent.KEYCODE_SHIFT_LEFT:
-            case KeyEvent.KEYCODE_SHIFT_RIGHT:
             case KeyEvent.KEYCODE_CTRL_LEFT:
             case KeyEvent.KEYCODE_CTRL_RIGHT:
+            case KeyEvent.KEYCODE_SHIFT_LEFT:
+            case KeyEvent.KEYCODE_SHIFT_RIGHT:
             case KeyEvent.KEYCODE_ALT_LEFT:
             case KeyEvent.KEYCODE_ALT_RIGHT:
                 mSpecial = false;
@@ -403,7 +407,7 @@ public class GestureInputMethod extends InputMethodService
             case KeyEvent.KEYCODE_DPAD_UP:
             case KeyEvent.KEYCODE_DPAD_DOWN:
                 sendKeyUp(keyCode, mMetaState);
-                mMetaState &= KeyEvent.META_SHIFT_MASK;
+                mMetaState &= KeyEvent.META_SHIFT_MASK | KeyEvent.META_CAPS_LOCK_ON;
                 if (isShiftOn(mMetaState))
                 {
                     mShiftUsed = true;
@@ -417,33 +421,15 @@ public class GestureInputMethod extends InputMethodService
                 {
                     sendKeyUp(keyCode, mMetaState);
                 }
-                mMetaState = 0;
+                mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
                 mSpecial = false;
                 break;
 
             default:
                 sendKeyUp(keyCode, mMetaState);
-                mMetaState = 0;
+                mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
                 mSpecial = false;
                 break;
-        }
-
-        if (isShiftOn(lastMetaState) && !isShiftOn(mMetaState))
-        {
-            lastMetaState &= ~KeyEvent.META_SHIFT_MASK;
-            sendKeyUp(KeyEvent.KEYCODE_SHIFT_LEFT, lastMetaState);
-        }
-
-        if (isCtrlOn(lastMetaState) && !isCtrlOn(mMetaState))
-        {
-            lastMetaState &= ~KeyEvent.META_CTRL_MASK;
-            sendKeyUp(KeyEvent.KEYCODE_CTRL_LEFT, lastMetaState);
-        }
-
-        if (isAltOn(lastMetaState) && !isAltOn(mMetaState))
-        {
-            lastMetaState &= ~KeyEvent.META_ALT_MASK;
-            sendKeyUp(KeyEvent.KEYCODE_ALT_LEFT, lastMetaState);
         }
 
         setState();
@@ -479,7 +465,11 @@ public class GestureInputMethod extends InputMethodService
 
     private void setState()
     {
-        if (isShiftOn(mMetaState))
+        if (isCapsLockOn(mMetaState))
+        {
+            mShift.setBackgroundResource(R.drawable.button_locked);
+        }
+        else if (isShiftOn(mMetaState))
         {
             mShift.setBackgroundResource(R.drawable.button_active);
         }
@@ -576,7 +566,8 @@ public class GestureInputMethod extends InputMethodService
         }
     }
 
-    private class OnKeyListener implements OnTouchListener
+    private class OnKeyListener
+    implements OnTouchListener
     {
         private final int mKeyCode;
         private boolean mKeyDown;
@@ -630,7 +621,103 @@ public class GestureInputMethod extends InputMethodService
         }
     }
 
-    class OnGestureUnistrokeListener extends GestureOverlayViewOnGestureListener
+    private class OnModifierKeyListener
+    implements OnTouchListener
+    {
+        private final int mKeyCode;
+        private boolean mKeyDown;
+
+        public OnModifierKeyListener(String tag)
+        {
+            mKeyCode = keyCodeFromTag(tag);
+        }
+
+        @Override
+        public boolean onTouch(View v, MotionEvent e)
+        {
+            final RectF rect = getViewRect(v);
+            switch (e.getAction())
+            {
+                case MotionEvent.ACTION_DOWN:
+                    if (!rect.contains(e.getRawX(), e.getRawY()))
+                    {
+                        return false;
+                    }
+
+                    keyDown(mKeyCode);
+                    mKeyDown = true;
+                    return true;
+
+                case MotionEvent.ACTION_UP:
+                    if (!mKeyDown)
+                    {
+                        return false;
+                    }
+
+                    keyUp(mKeyCode);
+                    mKeyDown = false;
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    private class OnShiftKeyListener
+    extends OnTouchGestureListener
+    {
+        private final int mKeyCode;
+        private boolean mKeyDown;
+
+        public OnShiftKeyListener(String tag)
+        {
+            mKeyCode = keyCodeFromTag(tag);
+        }
+
+        @Override
+        public boolean onDoubleTap(MotionEvent e)
+        {
+            mMetaState &= ~KeyEvent.META_SHIFT_MASK;
+            mMetaState |= KeyEvent.META_CAPS_LOCK_ON;
+            setState();
+            return false;
+        }
+
+        @Override
+        public boolean onTouch(View v, MotionEvent e)
+        {
+
+            final RectF rect = getViewRect(v);
+            switch (e.getAction())
+            {
+                case MotionEvent.ACTION_DOWN:
+                    if (!rect.contains(e.getRawX(), e.getRawY()))
+                    {
+                        break;
+                    }
+
+                    keyDown(mKeyCode);
+                    mKeyDown = true;
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                    if (!mKeyDown)
+                    {
+                        break;
+                    }
+
+                    keyUp(mKeyCode);
+                    mKeyDown = false;
+                    break;
+            }
+
+            super.onTouch(v, e);
+            return false;
+        }
+    }
+
+    class OnGestureUnistrokeListener
+    extends GestureOverlayViewOnGestureListener
     {
         private final GestureLibrary mMainStore;
         private final TextView mInfo;
@@ -698,7 +785,7 @@ public class GestureInputMethod extends InputMethodService
             if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
             {
                 getCurrentInputConnection().commitText(name, name.length());
-                mMetaState = 0;
+                mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
                 mSpecial = false;
                 setState();
                 return;
@@ -730,7 +817,8 @@ public class GestureInputMethod extends InputMethodService
         }
     }
 
-    private class OnTouchSwipeListener extends OnTouchGestureListener
+    private class OnTouchSwipeListener
+    extends OnTouchGestureListener
     {
         private static final int SWIPE_THRESHOLD = 100;
         private static final int SWIPE_VELOCITY_THRESHOLD = 100;
@@ -802,11 +890,10 @@ public class GestureInputMethod extends InputMethodService
     }
 
     private abstract class OnTouchCursorGestureListener
-    implements OnTouchListener
+    extends OnTouchGestureListener
     {
         private final float mCursorTolerance = getResources().getDimension(R.dimen.cursor_tolerance);
 
-        private final GestureDetector mLongPressDetector;
         private boolean mLongPress;
         private float mCursorX;
         private float mCursorY;
@@ -824,35 +911,10 @@ public class GestureInputMethod extends InputMethodService
             }
         };
 
-        public OnTouchCursorGestureListener()
-        {
-            mLongPressDetector = new GestureDetector(
-                GestureInputMethod.this,
-                new GestureDetectorOnGestureListener()
-                {
-                    @Override
-                    public boolean onDown(MotionEvent e)
-                    {
-                        mLongPress = false;
-                        return false;
-                    }
-
-                    @Override
-                    public void onLongPress(MotionEvent e)
-                    {
-                        if (!mSpecial)
-                        {
-                            mLongPress = true;
-                            onStartCursor(e);
-                        }
-                    }
-                });
-        }
-
         @Override
         public boolean onTouch(View v, MotionEvent e)
         {
-            mLongPressDetector.onTouchEvent(e);
+            super.onTouch(v, e);
 
             if (!mLongPress)
             {
@@ -873,6 +935,23 @@ public class GestureInputMethod extends InputMethodService
             }
 
             return true;
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e)
+        {
+            mLongPress = false;
+            return false;
+        }
+
+        @Override
+        public void onLongPress(MotionEvent e)
+        {
+            if (!mSpecial)
+            {
+                mLongPress = true;
+                onStartCursor(e);
+            }
         }
 
         public void onStartCursor(MotionEvent e)
@@ -967,7 +1046,7 @@ public class GestureInputMethod extends InputMethodService
     }
 
     private abstract class OnTouchGestureListener
-    extends GestureDetectorOnGestureListener
+    extends GestureDetector.SimpleOnGestureListener
     implements OnTouchListener
     {
         private final GestureDetector mGestureDetector;
@@ -975,7 +1054,6 @@ public class GestureInputMethod extends InputMethodService
         public OnTouchGestureListener()
         {
             mGestureDetector = new GestureDetector(GestureInputMethod.this, this);
-            mGestureDetector.setOnDoubleTapListener(this);
         }
 
         public GestureDetector getGetGestureDetector()
@@ -987,65 +1065,6 @@ public class GestureInputMethod extends InputMethodService
         public boolean onTouch(View view, MotionEvent e)
         {
             return mGestureDetector.onTouchEvent(e);
-        }
-    }
-
-
-    private abstract class GestureDetectorOnGestureListener
-    implements
-    GestureDetector.OnGestureListener,
-    GestureDetector.OnDoubleTapListener
-    {
-        @Override
-        public boolean onSingleTapConfirmed(MotionEvent e)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean onDoubleTap(MotionEvent e)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean onDoubleTapEvent(MotionEvent e)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean onDown(MotionEvent e)
-        {
-            return false;
-        }
-
-        @Override
-        public void onShowPress(MotionEvent e)
-        {
-        }
-
-        @Override
-        public boolean onSingleTapUp(MotionEvent e)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy)
-        {
-            return false;
-        }
-
-        @Override
-        public void onLongPress(MotionEvent e)
-        {
-        }
-
-        @Override
-        public boolean onFling(MotionEvent e1, MotionEvent e2, float vx, float vy)
-        {
-            return false;
         }
     }
 
