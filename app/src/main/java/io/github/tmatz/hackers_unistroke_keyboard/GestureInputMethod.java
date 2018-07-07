@@ -111,46 +111,6 @@ public class GestureInputMethod extends InputMethodService
                 }
             });
 
-        final View leftPanelGesture = mView.findViewById(R.id.left_panel_gesture);
-        leftPanelGesture.setOnTouchListener(
-            new OnTouchSwipeListener()
-            {
-                @Override
-                public void onSwipeRight()
-                {
-                    if (mKeyboard.getVisibility() == View.VISIBLE)
-                    {
-                        mKeyboard.setVisibility(View.INVISIBLE);
-                        unistrokeArea.setVisibility(View.VISIBLE);
-                    }
-                    else
-                    {
-                        mKeyboard.setVisibility(View.VISIBLE);
-                        unistrokeArea.setVisibility(View.INVISIBLE);
-                    }
-                }
-            });
-
-        final View rightPanelGesture = mView.findViewById(R.id.right_panel_gesture);
-        rightPanelGesture.setOnTouchListener(
-            new OnTouchSwipeListener()
-            {
-                @Override
-                public void onSwipeLeft()
-                {
-                    if (mKeyboard.getVisibility() == View.VISIBLE)
-                    {
-                        mKeyboard.setVisibility(View.INVISIBLE);
-                        unistrokeArea.setVisibility(View.VISIBLE);
-                    }
-                    else
-                    {
-                        mKeyboard.setVisibility(View.VISIBLE);
-                        unistrokeArea.setVisibility(View.INVISIBLE);
-                    }
-                }
-            });
-
         mShift = mView.findViewById(R.id.button_shift);
         mCtrl = mView.findViewById(R.id.button_ctrl);
 
@@ -158,6 +118,26 @@ public class GestureInputMethod extends InputMethodService
         setupKey(mView, R.id.button_ctrl);
         setupKey(mView, R.id.button_del);
         setupKey(mView, R.id.button_enter);
+
+        final Button extendKey = mView.findViewById(R.id.button_key);
+        extendKey.setOnClickListener(
+            new OnClickListener()
+            {
+                @Override
+                public void onClick(View p1)
+                {
+                    if (mKeyboard.getVisibility() == View.VISIBLE)
+                    {
+                        mKeyboard.setVisibility(View.INVISIBLE);
+                        unistrokeArea.setVisibility(View.VISIBLE);
+                    }
+                    else
+                    {
+                        mKeyboard.setVisibility(View.VISIBLE);
+                        unistrokeArea.setVisibility(View.INVISIBLE);
+                    }
+                }
+            });
 
         setupKey(mKeyboard, R.id.keyboard_button_h);
         setupKey(mKeyboard, R.id.keyboard_button_j);
@@ -173,6 +153,7 @@ public class GestureInputMethod extends InputMethodService
         setupKey(mKeyboard, R.id.keyboard_button_dpad_right);
         setupKey(mKeyboard, R.id.keyboard_button_dpad_up);
         setupKey(mKeyboard, R.id.keyboard_button_dpad_down);
+        setupKey(mKeyboard, R.id.keyboard_button_forward_del);
 
         gestureArea.addView(mKeyboard);
         mKeyboard.setVisibility(View.INVISIBLE);
@@ -358,6 +339,7 @@ public class GestureInputMethod extends InputMethodService
                 break;
 
             case KeyEvent.KEYCODE_DEL:
+            case KeyEvent.KEYCODE_FORWARD_DEL:
                 if (!mSpecial)
                 {
                     if (isShiftOn(mMetaState))
@@ -404,6 +386,7 @@ public class GestureInputMethod extends InputMethodService
                 break;
 
             case KeyEvent.KEYCODE_DEL:
+            case KeyEvent.KEYCODE_FORWARD_DEL:
                 if (!mSpecial)
                 {
                     sendKeyUp(keyCode, mMetaState);

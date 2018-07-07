@@ -3,199 +3,262 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="@dimen/height"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:layout_margin="@dimen/layout_margin">
 
-    <GridLayout
-        columnCount="1"
+    <LinearLayout
         android:layout_height="match_parent"
         android:layout_width="match_parent"
-        rowCount="1"
-        android:columnCount="6"
-        android:background="#000000">
+        android:orientation="horizontal"
+        android:layout_weight="1.0">
 
         <Button
-            android:tag="h"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="H"
             android:id="@+id/keyboard_button_h"
+            android:text="H"
+            android:tag="h"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
             android:background="@drawable/button"
+            style="?android:attr/buttonStyleSmall"
             android:textColor="@color/text_color"/>
 
         <Button
-            android:tag="j"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="J"
             android:id="@+id/keyboard_button_j"
+            android:text="J"
+            android:tag="j"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
             android:background="@drawable/button"
             android:textColor="@color/text_color"/>
 
         <Button
-            android:tag="k"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="K"
             android:id="@+id/keyboard_button_k"
+            android:text="K"
+            android:tag="k"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
             android:background="@drawable/button"
             android:textColor="@color/text_color"/>
 
         <Button
-            android:tag="l"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="L"
             android:id="@+id/keyboard_button_l"
+            android:tag="l"
+            android:text="L"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
             android:background="@drawable/button"
             android:textColor="@color/text_color"/>
 
         <Button
-            android:tag="dpad_up"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="UP"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:id="@+id/keyboard_button_dpad_up"
-            android:textScaleX="0.6"
+            android:text="⬆️"
+            android:tag="dpad_up"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
+            android:textScaleX="1.0"
             android:background="@drawable/button"
             android:textColor="@color/text_color"/>
 
         <Button
-            android:tag="move_home"
+            android:text="B"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
             style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="HOME"
-            android:id="@+id/keyboard_button_home"
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"
+            android:visibility="invisible"/>
+
+        <Button
+            android:id="@+id/keyboard_button_forward_del"
+            android:text="DEL"
+            android:tag="forward_del"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
             android:textScaleX="0.6"
             android:background="@drawable/button"
             android:textColor="@color/text_color"/>
 
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:layout_weight="1.0">
+
         <Button
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
             android:text="B"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"
+            android:visibility="invisible"/>
+
+        <Button
+            android:text="B"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
             android:visibility="invisible"
             android:textColor="@color/text_color"/>
 
         <Button
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
             android:text="B"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
             android:visibility="invisible"
             android:textColor="@color/text_color"/>
 
         <Button
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="B"
-            android:visibility="invisible"
-            android:textColor="@color/text_color"/>
-
-        <Button
-            android:tag="dpad_left"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="LEFT"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:id="@+id/keyboard_button_dpad_left"
-            android:textScaleX="0.6"
+            android:text="⬅️"
+            android:tag="dpad_left"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:textScaleX="1.0"
             android:background="@drawable/button"
             android:textColor="@color/text_color"/>
 
         <Button
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
             android:text="B"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
             android:visibility="invisible"
             android:textColor="@color/text_color"/>
 
         <Button
-            android:tag="dpad_right"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="RIGHT"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:id="@+id/keyboard_button_dpad_right"
-            android:textScaleX="0.6"
-            android:background="@drawable/button"
-            android:textColor="@color/text_color"/>
-
-        <Button
-            android:tag="z"
+            android:text="️➡️"
+            android:tag="dpad_right"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
             style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="Z"
-            android:id="@+id/keyboard_button_z"
-            android:background="@drawable/button"
-            android:textColor="@color/text_color"/>
-
-        <Button
-            android:tag="x"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="X"
-            android:id="@+id/keyboard_button_x"
-            android:background="@drawable/button"
-            android:textColor="@color/text_color"/>
-
-        <Button
-            android:tag="c"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="C"
-            android:id="@+id/keyboard_button_c"
-            android:background="@drawable/button"
-            android:textColor="@color/text_color"/>
-
-        <Button
-            android:tag="v"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="V"
-            android:id="@+id/keyboard_button_v"
-            android:background="@drawable/button"
-            android:textColor="@color/text_color"/>
-
-        <Button
-            android:tag="dpad_down"
-            style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="DOWN"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:id="@+id/keyboard_button_dpad_down"
-            android:textScaleX="0.6"
+            android:textScaleX="1.0"
             android:background="@drawable/button"
             android:textColor="@color/text_color"/>
 
         <Button
-            android:tag="move_end"
+            android:id="@+id/keyboard_button_home"
+            android:text="HOME"
+            android:tag="move_home"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
             style="?android:attr/buttonStyleSmall"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:text="END"
-            android:id="@+id/keyboard_button_move_end"
             android:textScaleX="0.6"
             android:background="@drawable/button"
             android:textColor="@color/text_color"/>
 
-    </GridLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:layout_weight="1.0">
+
+        <Button
+            android:id="@+id/keyboard_button_z"
+            android:text="Z"
+            android:tag="z"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
+
+        <Button
+            android:id="@+id/keyboard_button_x"
+            android:text="X"
+            android:tag="x"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
+
+        <Button
+            android:id="@+id/keyboard_button_c"
+            android:text="C"
+            android:tag="c"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
+
+        <Button
+            android:id="@+id/keyboard_button_v"
+            android:text="V"
+            android:tag="v"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
+
+        <Button
+            android:id="@+id/keyboard_button_dpad_down"
+            android:tag="dpad_down"
+            android:text="⬇️"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
+            android:textScaleX="1.0"
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
+
+        <Button
+            android:text="B"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
+            android:visibility="invisible"
+            android:textColor="@color/text_color"/>
+
+        <Button
+            android:id="@+id/keyboard_button_move_end"
+            android:text="END"
+            android:tag="move_end"
+            android:layout_height="match_parent"
+            android:layout_width="@dimen/button_width"
+            android:layout_weight="1.0"
+            style="?android:attr/buttonStyleSmall"
+            android:textScaleX="0.6"
+            android:background="@drawable/button"
+            android:textColor="@color/text_color"/>
+
+    </LinearLayout>
 
 </LinearLayout>
 
