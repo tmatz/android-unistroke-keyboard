@@ -1,76 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_height="wrap_content"
+    android:layout_height="@dimen/height"
     android:layout_width="match_parent"
     android:orientation="vertical"
     android:background="#000000">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="horizontal"
         android:scrollbars="none"
         android:padding="3dip">
 
-        <FrameLayout
+        <LinearLayout
             android:layout_height="match_parent"
             android:layout_width="wrap_content"
-            android:id="@+id/left_panel_gesture">
+            android:orientation="vertical"
+            android:id="@+id/left_panel">
 
-            <LinearLayout
-                android:layout_height="match_parent"
-                android:layout_width="wrap_content"
-                android:orientation="vertical"
-                android:id="@+id/left_panel">
+            <Button
+                android:id="@+id/button_ctrl"
+                android:text="CTRL"
+                android:tag="ctrl_left"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_weight="1.0"
+                android:layout_height="@dimen/button_height"
+                android:layout_width="@dimen/button_width"
+                android:textScaleX="0.6"
+                android:background="@drawable/button"
+                android:textColor="@color/text_color"/>
 
-                <Button
-                    android:id="@+id/button_ctrl"
-                    android:text="CTRL"
-                    android:tag="ctrl_left"
-                    style="?android:attr/buttonStyleSmall"
-                    android:layout_weight="1.0"
-                    android:layout_height="@dimen/button_height"
-                    android:layout_width="@dimen/button_width"
-                    android:textScaleX="0.6"
-                    android:background="@drawable/button"
-                    android:textColor="@color/text_color"/>
+            <Button
+                android:id="@+id/button_shift"
+                android:text="SHIFT"
+                android:tag="shift_left"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_weight="1.0"
+                android:layout_height="@dimen/button_height"
+                android:layout_width="@dimen/button_width"
+                android:textScaleX="0.6"
+                android:background="@drawable/button"
+                android:textColor="@color/text_color"/>
 
-                <Button
-                    android:id="@+id/button_shift"
-                    android:text="SHIFT"
-                    android:tag="shift_left"
-                    style="?android:attr/buttonStyleSmall"
-                    android:layout_weight="1.0"
-                    android:layout_height="@dimen/button_height"
-                    android:layout_width="@dimen/button_width"
-                    android:textScaleX="0.6"
-                    android:background="@drawable/button"
-                    android:textColor="@color/text_color"/>
+            <Button
+                android:id="@+id/button_alt"
+                android:text="ALT"
+                android:tag="alt_left"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_height="@dimen/button_height"
+                android:layout_width="@dimen/button_width"
+                android:textScaleX="0.6"
+                android:background="@drawable/button"
+                android:textColor="@color/text_color"/>
 
-                <Button
-                    android:id="@+id/button_alt"
-                    android:text="ALT"
-                    android:tag="alt_left"
-                    style="?android:attr/buttonStyleSmall"
-                    android:layout_height="@dimen/button_height"
-                    android:layout_width="@dimen/button_width"
-                    android:textScaleX="0.6"
-                    android:background="@drawable/button"
-                    android:textColor="@color/text_color"/>
-
-            </LinearLayout>
-
-        </FrameLayout>
+        </LinearLayout>
 
         <FrameLayout
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_width="0dip"
             android:layout_weight="1.0"
             android:id="@+id/gesture_area">
 
             <LinearLayout
-                android:layout_height="@dimen/height"
+                android:layout_height="match_parent"
                 android:layout_width="match_parent"
                 android:orientation="horizontal"
                 android:id="@+id/unistroke_area">
@@ -119,54 +112,47 @@
 
         </FrameLayout>
 
-        <FrameLayout
+        <LinearLayout
             android:layout_height="match_parent"
             android:layout_width="wrap_content"
-            android:id="@+id/right_panel_gesture">
+            android:orientation="vertical"
+            android:id="@+id/right_panel">
 
-            <LinearLayout
-                android:layout_height="match_parent"
-                android:layout_width="wrap_content"
-                android:orientation="vertical"
-                android:id="@+id/right_panel">
+            <Button
+                android:id="@+id/button_del"
+                android:text="BS"
+                android:tag="del"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_weight="1.0"
+                android:layout_height="@dimen/button_height"
+                android:layout_width="@dimen/button_width"
+                android:textScaleX="0.6"
+                android:background="@drawable/button"
+                android:textColor="@color/text_color"/>
 
-                <Button
-                    android:id="@+id/button_del"
-                    android:text="BS"
-                    android:tag="del"
-                    style="?android:attr/buttonStyleSmall"
-                    android:layout_weight="1.0"
-                    android:layout_height="@dimen/button_height"
-                    android:layout_width="@dimen/button_width"
-                    android:textScaleX="0.6"
-                    android:background="@drawable/button"
-                    android:textColor="@color/text_color"/>
+            <Button
+                android:id="@+id/button_enter"
+                android:text="RET"
+                android:tag="enter"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_weight="1.0"
+                android:layout_height="@dimen/button_height"
+                android:layout_width="@dimen/button_width"
+                android:textScaleX="0.6"
+                android:background="@drawable/button"
+                android:textColor="@color/text_color"/>
 
-                <Button
-                    android:id="@+id/button_enter"
-                    android:text="RET"
-                    android:tag="enter"
-                    style="?android:attr/buttonStyleSmall"
-                    android:layout_weight="1.0"
-                    android:layout_height="@dimen/button_height"
-                    android:layout_width="@dimen/button_width"
-                    android:textScaleX="0.6"
-                    android:background="@drawable/button"
-                    android:textColor="@color/text_color"/>
+            <Button
+                android:id="@+id/button_key"
+                android:text="KEY"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_height="@dimen/button_height"
+                android:layout_width="@dimen/button_width"
+                android:textScaleX="0.6"
+                android:background="@drawable/button"
+                android:textColor="@color/text_color"/>
 
-                <Button
-                    android:id="@+id/button_key"
-                    android:text="KEY"
-                    style="?android:attr/buttonStyleSmall"
-                    android:layout_height="@dimen/button_height"
-                    android:layout_width="@dimen/button_width"
-                    android:textScaleX="0.6"
-                    android:background="@drawable/button"
-                    android:textColor="@color/text_color"/>
-
-            </LinearLayout>
-
-        </FrameLayout>
+        </LinearLayout>
 
     </LinearLayout>
 
