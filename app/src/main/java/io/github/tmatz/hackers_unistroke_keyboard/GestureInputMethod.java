@@ -13,6 +13,10 @@ import java.util.*;
 
 public class GestureInputMethod extends InputMethodService
 {
+    private static final int KEYREPEAT_DELAY_FIRST_MS = 400;
+    private static final int KEYREPEAT_DELAY_MS = 100;
+    private static final int LONGPRESS_VIBRATION_MS = 25;
+
     private boolean mStoreReady;
 
     private final File mFileAlpabet = getGesturePath("gestures.alphabet");
@@ -37,7 +41,6 @@ public class GestureInputMethod extends InputMethodService
     private View mKeyboard;
     private Button mShift;
     private Button mCtrl;
-    private TextView mState;
     private boolean mSpecial;
     private int mMetaState;
     private boolean mShiftUsed;
@@ -69,7 +72,6 @@ public class GestureInputMethod extends InputMethodService
         reloadGestures();
 
         mView = getLayoutInflater().inflate(R.layout.input_method, null);
-        mState = mView.findViewById(R.id.state);
         final ViewGroup gestureArea = mView.findViewById(R.id.gesture_area);
         final View unistrokeArea = mView.findViewById(R.id.unistroke_area);
 
@@ -562,7 +564,7 @@ public class GestureInputMethod extends InputMethodService
             public void run()
             {
                 keyRepeat(mKeyCode);
-                mHandler.postDelayed(mRunnable, 100);
+                mHandler.postDelayed(mRunnable, KEYREPEAT_DELAY_MS);
             }
         };
 
@@ -585,7 +587,7 @@ public class GestureInputMethod extends InputMethodService
 
                     keyDown(mKeyCode);
                     mKeyDown = true;
-                    mHandler.postDelayed(mRunnable, 400);
+                    mHandler.postDelayed(mRunnable, KEYREPEAT_DELAY_FIRST_MS);
                     return true;
 
                 case MotionEvent.ACTION_UP:
@@ -668,7 +670,7 @@ public class GestureInputMethod extends InputMethodService
 
             String name = prediction.name;
             int keyCode = keyCodeFromTag(name);
-            mInfo.setText(String.format("%s %d", name, keyCode));
+            mInfo.setText(name);
 
             if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
             {
@@ -859,7 +861,7 @@ public class GestureInputMethod extends InputMethodService
             Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
             if (vibrator != null)
             {
-                vibrator.vibrate(25);
+                vibrator.vibrate(LONGPRESS_VIBRATION_MS);
             }
 
             mCursorX = e.getRawX();
