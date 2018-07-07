@@ -41,6 +41,7 @@ public class GestureInputMethod extends InputMethodService
     private View mKeyboard;
     private Button mShift;
     private Button mCtrl;
+    private Button mAlt;
     private boolean mSpecial;
     private int mMetaState;
     private boolean mShiftUsed;
@@ -113,9 +114,11 @@ public class GestureInputMethod extends InputMethodService
 
         mShift = mView.findViewById(R.id.button_shift);
         mCtrl = mView.findViewById(R.id.button_ctrl);
+        mAlt = mView.findViewById(R.id.button_alt);
 
         setupKey(mView, R.id.button_shift);
         setupKey(mView, R.id.button_ctrl);
+        setupKey(mView, R.id.button_alt);
         setupKey(mView, R.id.button_del);
         setupKey(mView, R.id.button_enter);
 
@@ -291,6 +294,11 @@ public class GestureInputMethod extends InputMethodService
         return (metaState & KeyEvent.META_CTRL_MASK) != 0;
     }
 
+    private static boolean isAltOn(int metaState)
+    {
+        return (metaState & KeyEvent.META_ALT_MASK) != 0;
+    }
+
     private void key(int keyCode)
     {
         keyDown(keyCode);
@@ -311,6 +319,19 @@ public class GestureInputMethod extends InputMethodService
                 if (isShiftOn(mMetaState))
                 {
                     sendKeyDown(keyCode, mMetaState & ~KeyEvent.META_SHIFT_MASK);
+                }
+                else
+                {
+                    sendKeyUp(keyCode, mMetaState);
+                }
+                break;
+
+            case KeyEvent.KEYCODE_ALT_LEFT:
+            case KeyEvent.KEYCODE_ALT_RIGHT:
+                mMetaState ^= (KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
+                if (isAltOn(mMetaState))
+                {
+                    sendKeyDown(keyCode, mMetaState & ~KeyEvent.META_ALT_MASK);
                 }
                 else
                 {
@@ -372,6 +393,8 @@ public class GestureInputMethod extends InputMethodService
             case KeyEvent.KEYCODE_SHIFT_RIGHT:
             case KeyEvent.KEYCODE_CTRL_LEFT:
             case KeyEvent.KEYCODE_CTRL_RIGHT:
+            case KeyEvent.KEYCODE_ALT_LEFT:
+            case KeyEvent.KEYCODE_ALT_RIGHT:
                 mSpecial = false;
                 break;
 
@@ -381,7 +404,10 @@ public class GestureInputMethod extends InputMethodService
             case KeyEvent.KEYCODE_DPAD_DOWN:
                 sendKeyUp(keyCode, mMetaState);
                 mMetaState &= KeyEvent.META_SHIFT_MASK;
-                mShiftUsed = true;
+                if (isShiftOn(mMetaState))
+                {
+                    mShiftUsed = true;
+                }
                 mSpecial = false;
                 break;
 
@@ -414,6 +440,12 @@ public class GestureInputMethod extends InputMethodService
             sendKeyUp(KeyEvent.KEYCODE_CTRL_LEFT, lastMetaState);
         }
 
+        if (isAltOn(lastMetaState) && !isAltOn(mMetaState))
+        {
+            lastMetaState &= ~KeyEvent.META_ALT_MASK;
+            sendKeyUp(KeyEvent.KEYCODE_ALT_LEFT, lastMetaState);
+        }
+
         setState();
 
         if (keyCode == KeyEvent.KEYCODE_ENTER)
@@ -429,15 +461,14 @@ public class GestureInputMethod extends InputMethodService
 
     private void keyRepeat(int keyCode)
     {
+        if (KeyEvent.isModifierKey(keyCode))
+        {
+            return;
+        }
+
         switch (keyCode)
         {
             case KeyEvent.KEYCODE_UNKNOWN:
-                break;
-
-            case KeyEvent.KEYCODE_SHIFT_LEFT:
-            case KeyEvent.KEYCODE_SHIFT_RIGHT:
-            case KeyEvent.KEYCODE_CTRL_LEFT:
-            case KeyEvent.KEYCODE_CTRL_RIGHT:
                 break;
 
             default:
@@ -464,6 +495,15 @@ public class GestureInputMethod extends InputMethodService
         else
         {
             mCtrl.setBackgroundResource(R.drawable.button);
+        }
+
+        if (isAltOn(mMetaState))
+        {
+            mAlt.setBackgroundResource(R.drawable.button_active);
+        }
+        else
+        {
+            mAlt.setBackgroundResource(R.drawable.button);
         }
     }
 
