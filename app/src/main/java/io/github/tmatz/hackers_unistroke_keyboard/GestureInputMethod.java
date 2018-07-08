@@ -1,5 +1,6 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
+import android.content.*;
 import android.gesture.*;
 import android.graphics.*;
 import android.inputmethodservice.*;
@@ -8,7 +9,6 @@ import android.view.*;
 import android.view.View.*;
 import android.view.inputmethod.*;
 import android.widget.*;
-import java.io.*;
 import java.util.*;
 
 public class GestureInputMethod
@@ -18,25 +18,11 @@ extends InputMethodService
     private static final int KEYREPEAT_DELAY_MS = 100;
     private static final int LONGPRESS_VIBRATION_MS = 25;
 
-    private boolean mStoreReady;
-
-    private final File mFileAlpabet = getGesturePath("gestures.alphabet");
-    private final File mFileNumber = getGesturePath("gestures.number");
-    private final File mFileSpecial = getGesturePath("gestures.special");
-    private final File mFileControl = getGesturePath("gestures.control");
-    private final File mFileControlSingle = getGesturePath("gestures.control.single");
-
     private GestureLibrary mStoreAlpabet;
     private GestureLibrary mStoreNumber;
     private GestureLibrary mStoreSpecial;
     private GestureLibrary mStoreControl;
     private GestureLibrary mStoreControlSingle;
-
-    private long mTimestampAlpabet;
-    private long mTimestampNumber;
-    private long mTimestampSpecial;
-    private long mTimestampControl;
-    private long mTimestampControlSingle;
 
     private View mView;
     private ViewGroup mGestureArea;
@@ -54,13 +40,11 @@ extends InputMethodService
     {
         super.onCreate();
 
-        mStoreAlpabet = createGesture(mFileAlpabet);
-        mStoreNumber = createGesture(mFileNumber);
-        mStoreSpecial = createGesture(mFileSpecial);
-        mStoreControl = createGesture(mFileControl);
-        mStoreControlSingle = createGesture(mFileControlSingle);
-
-        loadGestures();
+        mStoreAlpabet = createGesture(this, R.raw.gestures_alphabet);
+        mStoreNumber = createGesture(this, R.raw.gestures_number);
+        mStoreSpecial = createGesture(this, R.raw.gestures_special);
+        mStoreControl = createGesture(this, R.raw.gestures_control);
+        mStoreControlSingle = createGesture(this, R.raw.gestures_control_single);
     }
 
     @Override
@@ -72,8 +56,6 @@ extends InputMethodService
     @Override
     public View onCreateInputView()
     {
-        reloadGestures();
-
         mView = getLayoutInflater().inflate(R.layout.input_method, null);
         mGestureArea = mView.findViewById(R.id.gesture_area);
         final View unistrokeArea = mView.findViewById(R.id.unistroke_area);
@@ -169,13 +151,11 @@ extends InputMethodService
     @Override
     public void onStartInput(EditorInfo attribute, boolean restarting)
     {
-        reloadGestures();
     }
 
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting)
     {
-        reloadGestures();
     }
 
     @Override
@@ -215,93 +195,13 @@ extends InputMethodService
         }
     }
 
-    private static File getGesturePath(String fileName)
+    private static GestureLibrary createGesture(Context context, int rawId)
     {
-        File baseDir = Environment.getExternalStorageDirectory();
-        return new File(baseDir, fileName);
-    }
-
-    private static GestureLibrary createGesture(File file)
-    {
-        GestureLibrary store = GestureLibraries.fromFile(file);
+        GestureLibrary store = GestureLibraries.fromRawResource(context, rawId);
         store.setOrientationStyle(8);
+
+        store.load();
         return store;
-    }
-
-    private void loadGestures()
-    {
-        if (mStoreReady)
-        {
-            return;
-        }
-
-        if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState()))
-        {
-            Toast.makeText(getApplicationContext(), "external storage not mounted", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        mStoreAlpabet.load();
-        mTimestampAlpabet = mFileAlpabet.lastModified();
-
-        mStoreNumber.load();
-        mTimestampNumber = mFileNumber.lastModified();
-
-        mStoreSpecial.load();
-        mTimestampSpecial = mFileSpecial.lastModified();
-
-        mStoreControl.load();
-        mTimestampControl = mFileControl.lastModified();
-
-        mStoreControlSingle.load();
-        mTimestampControlSingle = mFileControlSingle.lastModified();
-
-        mStoreReady = true;
-    }
-
-    private void reloadGestures()
-    {
-        if (!mStoreReady)
-        {
-            return;
-        }
-
-        long mtime;
-
-        mtime = mFileAlpabet.lastModified();
-        if (mtime != mTimestampAlpabet)
-        {
-            mStoreAlpabet.load();
-            mTimestampAlpabet = mtime;
-        }
-
-        mtime = mFileNumber.lastModified();
-        if (mtime != mTimestampNumber)
-        {
-            mStoreNumber.load();
-            mTimestampNumber = mtime;
-        }
-
-        mtime = mFileSpecial.lastModified();
-        if (mtime != mTimestampSpecial)
-        {
-            mStoreSpecial.load();
-            mTimestampSpecial = mtime;
-        }
-
-        mtime = mFileControl.lastModified();
-        if (mtime != mTimestampControl)
-        {
-            mStoreControl.load();
-            mTimestampControl = mtime;
-        }
-
-        mtime = mFileControlSingle.lastModified();
-        if (mtime != mTimestampControlSingle)
-        {
-            mStoreControlSingle.load();
-            mTimestampControlSingle = mtime;
-        }
     }
 
     private static boolean isCapsLockOn(int metaState)
@@ -762,18 +662,7 @@ extends InputMethodService
         @Override
         public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
         {
-            if (!mStoreReady)
-            {
-                mInfo.setText("not ready");
-                return;
-            }
-
             final Gesture gesture = overlay.getGesture();
-            processGesture(gesture);
-        }
-
-        private void processGesture(Gesture gesture)
-        {
             PredictionResult prediction;
 
             if (mSpecial)
