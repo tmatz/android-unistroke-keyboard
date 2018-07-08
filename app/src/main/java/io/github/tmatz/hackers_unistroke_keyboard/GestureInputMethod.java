@@ -255,12 +255,19 @@ extends InputMethodService
                 case KeyEvent.KEYCODE_SHIFT_RIGHT:
                     if (isCapsLockOn(mMetaState))
                     {
+                        mMetaState &= ~KeyEvent.META_SHIFT_MASK;
                         mMetaState &= ~KeyEvent.META_CAPS_LOCK_ON;
                     }
                     else
                     {
                         mMetaState ^= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
                     }
+                    mShiftUsed = false;
+                    break;
+
+                case KeyEvent.KEYCODE_CAPS_LOCK:
+                    mMetaState |= KeyEvent.META_CAPS_LOCK_ON;
+                    mMetaState &= ~KeyEvent.META_SHIFT_MASK;
                     mShiftUsed = false;
                     break;
 
@@ -315,18 +322,18 @@ extends InputMethodService
                 case KeyEvent.KEYCODE_CTRL_RIGHT:
                 case KeyEvent.KEYCODE_SHIFT_LEFT:
                 case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                case KeyEvent.KEYCODE_CAPS_LOCK:
                 case KeyEvent.KEYCODE_ALT_LEFT:
                 case KeyEvent.KEYCODE_ALT_RIGHT:
                     mSpecial = false;
                     break;
-
             }
         }
         else
         {
+            final int lastMetaState = mMetaState;
             switch (keyCode)
             {
-
                 case KeyEvent.KEYCODE_DPAD_LEFT:
                 case KeyEvent.KEYCODE_DPAD_RIGHT:
                 case KeyEvent.KEYCODE_DPAD_UP:
@@ -357,7 +364,7 @@ extends InputMethodService
                     break;
             }
 
-            if (isShiftOn(mMetaState))
+            if (isShiftOn(lastMetaState))
             {
                 sendKeyUp(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~KeyEvent.META_SHIFT_MASK);
             }
@@ -608,9 +615,7 @@ extends InputMethodService
         @Override
         public boolean onDoubleTap(MotionEvent e)
         {
-            mMetaState &= ~KeyEvent.META_SHIFT_MASK;
-            mMetaState |= KeyEvent.META_CAPS_LOCK_ON;
-            setState();
+            key(KeyEvent.KEYCODE_CAPS_LOCK);
             return false;
         }
 
