@@ -151,11 +151,13 @@ extends InputMethodService
     @Override
     public void onStartInput(EditorInfo attribute, boolean restarting)
     {
+        super.onStartInput(attribute, restarting);
     }
 
     @Override
     public void onStartInputView(EditorInfo info, boolean restarting)
     {
+        super.onStartInputView(info, restarting);
     }
 
     @Override
@@ -163,6 +165,31 @@ extends InputMethodService
     {
         mHandler.removeCallbacks(null);
         super.onFinishInputView(finishingInput);
+    }
+
+    private int getEditorAction()
+    {
+        return getCurrentInputEditorInfo().imeOptions & (EditorInfo.IME_MASK_ACTION | EditorInfo.IME_FLAG_NO_ENTER_ACTION);
+    }
+
+    private boolean isEditorActionRequested()
+    {
+        int action = getEditorAction();
+
+        if ((action & EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0)
+        {
+            return false;
+        }
+
+        switch (action)
+        {
+            case EditorInfo.IME_ACTION_NONE:
+            case EditorInfo.IME_ACTION_UNSPECIFIED:
+                return false;
+
+            default:
+                return true;
+        }
     }
 
     private void setupKey(View root, int id)
@@ -294,6 +321,21 @@ extends InputMethodService
                     }
                     break;
 
+                case KeyEvent.KEYCODE_ENTER:
+                    if (isEditorActionRequested())
+                    {
+                        getCurrentInputConnection().performEditorAction(getEditorAction());
+                        return;
+                    }
+
+                    if (isShiftOn(mMetaState))
+                    {
+                        sendKeyDown(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~KeyEvent.META_SHIFT_MASK);
+                    }
+
+                    sendKeyDown(keyCode, mMetaState);
+                    break;
+
                 default:
                     if (isShiftOn(mMetaState))
                     {
@@ -357,6 +399,17 @@ extends InputMethodService
                     mSpecial = false;
                     break;
 
+                case KeyEvent.KEYCODE_ENTER:
+                    if (isEditorActionRequested())
+                    {
+                        return;
+                    }
+
+                    sendKeyUp(keyCode, mMetaState);
+                    mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
+                    mSpecial = false;
+                    break;
+
                 default:
                     sendKeyUp(keyCode, mMetaState);
                     mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
@@ -371,16 +424,6 @@ extends InputMethodService
         }
 
         setState();
-
-        if (keyCode == KeyEvent.KEYCODE_ENTER)
-        {
-            switch (getCurrentInputEditorInfo().actionId)
-            {
-                case EditorInfo.IME_ACTION_DONE:
-                    getCurrentInputConnection().closeConnection();
-                    break;
-            }
-        }
     }
 
     private void keyRepeat(int keyCode)
