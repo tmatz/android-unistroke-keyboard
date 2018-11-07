@@ -328,7 +328,7 @@ extends InputMethodService
             {
                 case KeyEvent.KEYCODE_DEL:
                 case KeyEvent.KEYCODE_FORWARD_DEL:
-                    if (!mSpecial && !isShiftOn() && !isCtrlOn() && isAltOn())
+                    if (!mSpecial && !isShiftOn() && !isCtrlOn() && !isAltOn())
                     {
                         sendKeyDown(keyCode, mMetaState);
                     }
