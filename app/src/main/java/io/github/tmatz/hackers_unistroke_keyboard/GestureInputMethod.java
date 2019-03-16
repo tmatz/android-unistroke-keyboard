@@ -16,7 +16,7 @@ extends InputMethodService
 {
     private static final int KEYREPEAT_DELAY_FIRST_MS = 400;
     private static final int KEYREPEAT_DELAY_MS = 100;
-    private static final int LONGPRESS_VIBRATION_MS = 25;
+    private static final int LONGPRESS_VIBRATION_MS = 15;
 
     private GestureLibrary mStoreAlpabet;
     private GestureLibrary mStoreNumber;
@@ -799,80 +799,8 @@ extends InputMethodService
         }
     }
 
-    private class OnTouchSwipeListener
-    extends OnTouchGestureListener
-    {
-        private static final int SWIPE_THRESHOLD = 100;
-        private static final int SWIPE_VELOCITY_THRESHOLD = 100;
-
-        public void onSwipeRight()
-        {
-        }
-
-        public void onSwipeLeft()
-        {
-        }
-
-        public void onSwipeTop()
-        {
-        }
-
-        public void onSwipeBottom()
-        {
-        }
-
-        @Override
-        public boolean onDown(MotionEvent e)
-        {
-            return true;
-        }
-
-        @Override
-        public boolean onFling(MotionEvent e1, MotionEvent e2, float vx, float vy)
-        {
-            boolean result = false;
-            try
-            {
-                float diffY = e2.getY() - e1.getY();
-                float diffX = e2.getX() - e1.getX();
-                if (Math.abs(diffX) > Math.abs(diffY))
-                {
-                    if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(vx) > SWIPE_VELOCITY_THRESHOLD)
-                    {
-                        if (diffX > 0)
-                        {
-                            onSwipeRight();
-                        }
-                        else
-                        {
-                            onSwipeLeft();
-                        }
-                        result = true;
-                    }
-                }
-                else if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(vy) > SWIPE_VELOCITY_THRESHOLD)
-                {
-                    if (diffY > 0)
-                    {
-                        onSwipeBottom();
-                    }
-                    else
-                    {
-                        onSwipeTop();
-                    }
-                    result = true;
-                }
-            }
-            catch (Exception exception)
-            {
-                exception.printStackTrace();
-            }
-            return result;
-        }
-    }
-
     private abstract class OnTouchCursorGestureListener
-    extends OnTouchGestureListener
+    implements OnTouchListener
     {
         private final float mCursorTolerance = getResources().getDimension(R.dimen.cursor_tolerance);
 
@@ -882,58 +810,71 @@ extends InputMethodService
         private boolean mRepeating;
         private boolean mRepeated;
         private MotionEvent mLastEvent;
-        private View mView;
 
         private final Runnable mRunnable = new Runnable()
         {
             @Override
             public void run()
             {
-                repeatMoveCursor(true);
+                if (!mLongPress)
+                {
+                    if (!mSpecial)
+                    {
+                        mLongPress = true;
+                        onStartCursor(mLastEvent);
+                    }
+                }
+                else
+                {
+                    repeatMoveCursor(true);
+                }
             }
         };
 
         @Override
         public boolean onTouch(View v, MotionEvent e)
         {
-            super.onTouch(v, e);
-
-            if (!mLongPress)
-            {
-                return true;
-            }
-
             switch (e.getAction())
             {
+                case MotionEvent.ACTION_DOWN:
+                    mLongPress = false;
+                    mLastEvent = e;
+                    mCursorX = e.getRawX();
+                    mCursorY = e.getRawY();
+                    mHandler.postDelayed(mRunnable, 200);
+                    break;
+
                 case MotionEvent.ACTION_MOVE:
-                    mView = v;
-                    onMoveCursor(e);
+                    if (!mLongPress)
+                    {
+                        float dx = Math.abs(e.getRawX() - mCursorX);
+                        float dy = Math.abs(e.getRawY() - mCursorY);
+                        if (dx + dy > mCursorTolerance)
+                        {
+                            mHandler.removeCallbacks(mRunnable);
+                        }
+                    }
+                    else
+                    {
+                        onMoveCursor(e);
+                    }
                     break;
 
                 case MotionEvent.ACTION_UP:
-                    onFinishCursor(e);
-                    mLongPress = false;
+                    if (!mLongPress)
+                    {
+                        mHandler.removeCallbacks(mRunnable);
+                    }
+                    else
+                    {
+                        onFinishCursor(e);
+                        mLongPress = false;
+                    }
+                    mLastEvent = null;
                     break;
             }
 
             return true;
-        }
-
-        @Override
-        public boolean onDown(MotionEvent e)
-        {
-            mLongPress = false;
-            return false;
-        }
-
-        @Override
-        public void onLongPress(MotionEvent e)
-        {
-            if (!mSpecial)
-            {
-                mLongPress = true;
-                onStartCursor(e);
-            }
         }
 
         public void onStartCursor(MotionEvent e)
@@ -1054,7 +995,8 @@ extends InputMethodService
         }
     }
 
-    private abstract class GestureOverlayViewOnGestureListener implements GestureOverlayView.OnGestureListener
+    private abstract class GestureOverlayViewOnGestureListener
+    implements GestureOverlayView.OnGestureListener
     {
         @Override
         public void onGesture(GestureOverlayView overlay, MotionEvent e)
