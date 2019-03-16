@@ -14,6 +14,7 @@ import java.util.*;
 public class GestureInputMethod
 extends InputMethodService
 {
+    private static final int CURSOR_GESTURE_START_MS = 300;
     private static final int KEYREPEAT_DELAY_FIRST_MS = 400;
     private static final int KEYREPEAT_DELAY_MS = 100;
     private static final int LONGPRESS_VIBRATION_MS = 15;
@@ -807,6 +808,7 @@ extends InputMethodService
         private boolean mLongPress;
         private float mCursorX;
         private float mCursorY;
+        private float mMoveDistance;
         private boolean mRepeating;
         private boolean mRepeated;
         private MotionEvent mLastEvent;
@@ -841,7 +843,8 @@ extends InputMethodService
                     mLastEvent = e;
                     mCursorX = e.getRawX();
                     mCursorY = e.getRawY();
-                    mHandler.postDelayed(mRunnable, 200);
+                    mMoveDistance = 0;
+                    mHandler.postDelayed(mRunnable, CURSOR_GESTURE_START_MS);
                     break;
 
                 case MotionEvent.ACTION_MOVE:
@@ -849,7 +852,8 @@ extends InputMethodService
                     {
                         float dx = Math.abs(e.getRawX() - mCursorX);
                         float dy = Math.abs(e.getRawY() - mCursorY);
-                        if (dx + dy > mCursorTolerance)
+                        mMoveDistance += dx + dy;
+                        if (mMoveDistance > mCursorTolerance)
                         {
                             mHandler.removeCallbacks(mRunnable);
                         }
