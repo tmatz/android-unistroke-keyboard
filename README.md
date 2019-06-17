@@ -9,3 +9,5 @@ Unistroke Handwriting Input Method for Programming
 * Tap enters special key mode.
 * KEY button shows some useful key buttons.
 * Long press enters cursor mode.
+
+![gesture](./docs/images/gesture.png)
