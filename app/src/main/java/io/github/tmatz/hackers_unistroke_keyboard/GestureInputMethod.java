@@ -23,7 +23,6 @@ extends InputMethodService
     private GestureLibrary mStoreNumber;
     private GestureLibrary mStoreSpecial;
     private GestureLibrary mStoreControl;
-    private GestureLibrary mStoreControlSingle;
 
     private View mView;
     private ViewGroup mGestureArea;
@@ -45,7 +44,6 @@ extends InputMethodService
         mStoreNumber = createGesture(this, R.raw.gestures_number);
         mStoreSpecial = createGesture(this, R.raw.gestures_special);
         mStoreControl = createGesture(this, R.raw.gestures_control);
-        mStoreControlSingle = createGesture(this, R.raw.gestures_control_single);
     }
 
     @Override
@@ -730,13 +728,12 @@ extends InputMethodService
 
             if (mSpecial)
             {
-                prediction = getPrediction(null, gesture, mStoreSpecial, 0.7);
+                prediction = getPrediction(null, gesture, mStoreSpecial, 1.0);
             }
             else
             {
-                prediction = getPrediction(null, gesture, mMainStore, 0.7);
-                prediction = getPrediction(prediction, gesture, mStoreControl, 0.7);
-                prediction = getPrediction(prediction, gesture, mStoreControlSingle, 0.2);
+                prediction = getPrediction(null, gesture, mMainStore, 1.0);
+                prediction = getPrediction(prediction, gesture, mStoreControl, 1.0);
             }
 
             if (Double.isNaN(prediction.score))
