@@ -724,16 +724,16 @@ extends InputMethodService
         public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
         {
             final Gesture gesture = overlay.getGesture();
-            PredictionResult prediction;
+            PredictionResult prediction = new PredictionResult();
 
             if (mSpecial)
             {
-                prediction = getPrediction(null, gesture, mStoreSpecial, 1.0);
+                prediction = getPrediction(prediction, gesture, mStoreSpecial, 1.0);
             }
             else
             {
-                prediction = getPrediction(null, gesture, mMainStore, 1.0);
-                prediction = getPrediction(prediction, gesture, mStoreControl, 1.0);
+                prediction = getPrediction(prediction, gesture, mStoreControl, 0.7);
+                prediction = getPrediction(prediction, gesture, mMainStore, 1.0);
             }
 
             if (Double.isNaN(prediction.score))
@@ -753,7 +753,7 @@ extends InputMethodService
                 }
             }
 
-            if (prediction.score < 1.0)
+            if (prediction.score < 1.5)
             {
                 return;
             }
@@ -776,24 +776,30 @@ extends InputMethodService
 
         private PredictionResult getPrediction(PredictionResult previous, Gesture gesture, GestureLibrary store, double scale)
         {
-            PredictionResult current;
-
             ArrayList<Prediction> predictions = store.recognize(gesture);
             if (predictions.size() > 0)
             {
-                current = new PredictionResult(predictions.get(0), scale);
+                PredictionResult current = new PredictionResult(predictions.get(0), scale);
+                if (previous.score > current.score)
+                {
+                    return previous;
+                }
+
+                if (predictions.size() > 1)
+                {
+                    PredictionResult next = new PredictionResult(predictions.get(1), scale);
+                    if (current.score < next.score + 0.5)
+                    {
+                        return new PredictionResult();
+                    }
+                }
+
+                return current;
             }
             else
             {
-                current = new PredictionResult();
+                return previous;
             }
-
-            if (previous == null || current.score > previous.score)
-            {
-                return current;
-            }
-
-            return previous;
         }
     }
 
