@@ -788,7 +788,7 @@ extends InputMethodService
                 if (predictions.size() > 1)
                 {
                     PredictionResult next = new PredictionResult(predictions.get(1), scale);
-                    if (current.score < next.score + 0.5)
+                    if (current.score < next.score + 0.2)
                     {
                         return new PredictionResult();
                     }
