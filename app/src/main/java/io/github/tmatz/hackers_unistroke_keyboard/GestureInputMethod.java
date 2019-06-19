@@ -17,7 +17,8 @@ extends InputMethodService
     private static final int CURSOR_GESTURE_START_MS = 300;
     private static final int KEYREPEAT_DELAY_FIRST_MS = 400;
     private static final int KEYREPEAT_DELAY_MS = 100;
-    private static final int LONGPRESS_VIBRATION_MS = 15;
+    private static final int VIBRATION_MS = 15;
+    private static final int VIBRATION_STRONG_MS = 30;
 
     private GestureLibrary mStoreAlpabet;
     private GestureLibrary mStoreNumber;
@@ -528,6 +529,24 @@ extends InputMethodService
         return KeyEvent.keyCodeFromString("KEYCODE_" + tag.toUpperCase());
     }
 
+    private void vibrate()
+    {
+        Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
+        if (vibrator != null)
+        {
+            vibrator.vibrate(VIBRATION_MS);
+        }
+    }
+
+    private void vibrateStrong()
+    {
+        Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
+        if (vibrator != null)
+        {
+            vibrator.vibrate(VIBRATION_STRONG_MS);
+        }
+    }
+
     private static RectF getViewRect(View view)
     {
         int[] location = new int[2];
@@ -711,6 +730,8 @@ extends InputMethodService
     class OnGestureUnistrokeListener
     extends GestureOverlayViewOnGestureListener
     {
+        private static final PredictionResult sPredictionFailed = new PredictionResult();
+
         private final GestureLibrary mMainStore;
         private final TextView mInfo;
 
@@ -724,7 +745,7 @@ extends InputMethodService
         public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
         {
             final Gesture gesture = overlay.getGesture();
-            PredictionResult prediction = new PredictionResult();
+            PredictionResult prediction = sPredictionFailed;
 
             if (mSpecial)
             {
@@ -753,8 +774,9 @@ extends InputMethodService
                 }
             }
 
-            if (prediction.score < 1.5)
+            if (prediction.score == 0)
             {
+                vibrateStrong();
                 return;
             }
 
@@ -785,12 +807,20 @@ extends InputMethodService
                     return previous;
                 }
 
-                if (predictions.size() > 1)
+                if (isCtrlOn(GestureInputMethod.this.mMetaState))
                 {
-                    PredictionResult next = new PredictionResult(predictions.get(1), scale);
-                    if (current.score < next.score + 0.2)
+                    if (current.score < 1.5)
                     {
-                        return new PredictionResult();
+                        return sPredictionFailed;
+                    }
+
+                    if (predictions.size() > 1)
+                    {
+                        PredictionResult next = new PredictionResult(predictions.get(1), scale);
+                        if (current.score < next.score + 0.2)
+                        {
+                            return sPredictionFailed;
+                        }
                     }
                 }
 
@@ -890,11 +920,7 @@ extends InputMethodService
             mSpecial = false;
             setState();
 
-            Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
-            if (vibrator != null)
-            {
-                vibrator.vibrate(LONGPRESS_VIBRATION_MS);
-            }
+            vibrate();
 
             mCursorX = e.getRawX();
             mCursorY = e.getRawY();
