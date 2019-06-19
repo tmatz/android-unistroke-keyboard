@@ -31,6 +31,8 @@ extends InputMethodService
     private Button mShift;
     private Button mCtrl;
     private Button mAlt;
+    private TextView mInfoAlphabet;
+    private TextView mInfoNum;
     private boolean mSpecial;
     private int mMetaState;
     private boolean mShiftUsed;
@@ -61,12 +63,12 @@ extends InputMethodService
         final View unistrokeArea = mView.findViewById(R.id.unistroke_area);
 
         final GestureOverlayView overlay = mView.findViewById(R.id.gestures_overlay);
-        final TextView info = mView.findViewById(R.id.info);
-        overlay.addOnGestureListener(new OnGestureUnistrokeListener(mStoreAlpabet, info));
+        mInfoAlphabet = mView.findViewById(R.id.info);
+        overlay.addOnGestureListener(new OnGestureUnistrokeListener(mStoreAlpabet, mInfoAlphabet));
 
         final GestureOverlayView overlayNum = mView.findViewById(R.id.gestures_overlay_num);
-        final TextView infoNum = mView.findViewById(R.id.info_num);
-        overlayNum.addOnGestureListener(new OnGestureUnistrokeListener(mStoreNumber, infoNum));
+        mInfoNum = mView.findViewById(R.id.info_num);
+        overlayNum.addOnGestureListener(new OnGestureUnistrokeListener(mStoreNumber, mInfoNum));
 
         overlay.setOnTouchListener(
             new OnTouchCursorGestureListener()
@@ -547,6 +549,13 @@ extends InputMethodService
         }
     }
 
+    private void setInfo(TextView textView, String info)
+    {
+        mInfoAlphabet.setText("");
+        mInfoNum.setText("");
+        textView.setText(info);
+    }
+
     private static RectF getViewRect(View view)
     {
         int[] location = new int[2];
@@ -761,13 +770,13 @@ extends InputMethodService
             {
                 if (mSpecial)
                 {
-                    mInfo.setText("");
+                    setInfo("");
                     key(KeyEvent.KEYCODE_PERIOD);
                     return;
                 }
                 else
                 {
-                    mInfo.setText("special");
+                    setInfo("special");
                     mSpecial = true;
                     setState();
                     return;
@@ -782,7 +791,7 @@ extends InputMethodService
 
             String name = prediction.name;
             int keyCode = keyCodeFromTag(name);
-            mInfo.setText("");
+            setInfo("");
 
             if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
             {
@@ -830,6 +839,11 @@ extends InputMethodService
             {
                 return previous;
             }
+        }
+
+        private void setInfo(String info)
+        {
+            GestureInputMethod.this.setInfo(mInfo, info);
         }
     }
 
