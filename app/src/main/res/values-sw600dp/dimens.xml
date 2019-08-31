@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="button_width">40dip</dimen>
-    <dimen name="button_height">36dip</dimen>
+    <dimen name="button_width">60dip</dimen>
+    <dimen name="button_height">48dip</dimen>
     <dimen name="cursor_tolerance">20dip</dimen>
     <dimen name="layout_margin">3dip</dimen>
-    <dimen name="gestures_overlay_num_width">0dip</dimen>    
+    <dimen name="gestures_overlay_num_width">160dip</dimen>
 </resources>

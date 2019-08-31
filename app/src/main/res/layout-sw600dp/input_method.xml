@@ -76,8 +76,8 @@
                     android:gestureStrokeType="single"
                     android:fadeEnabled="false"
                     android:background="#222222"
-                    android:layout_weight="4.0"
-                    android:layout_margin="@dimen/layout_margin">
+                    android:layout_margin="@dimen/layout_margin"
+                    android:layout_weight="1.0">
 
                     <TextView
                         android:id="@+id/info"
@@ -90,13 +90,12 @@
 
                 <android.gesture.GestureOverlayView
                     android:id="@+id/gestures_overlay_num"
-                    android:layout_width="0dip"
+                    android:layout_width="@dimen/gestures_overlay_num_width"
                     android:layout_height="match_parent"
                     android:orientation="vertical"
                     android:gestureStrokeType="single"
                     android:fadeEnabled="false"
                     android:background="#222222"
-                    android:layout_weight="3.0"
                     android:layout_margin="@dimen/layout_margin">
 
                     <TextView

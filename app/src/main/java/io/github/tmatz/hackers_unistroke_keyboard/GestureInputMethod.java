@@ -899,7 +899,7 @@ extends InputMethodService
                     {
                         float dx = Math.abs(e.getRawX() - mCursorX);
                         float dy = Math.abs(e.getRawY() - mCursorY);
-                        mMoveDistance += dx + dy;
+                        mMoveDistance = dx + dy;
                         if (mMoveDistance > mCursorTolerance)
                         {
                             mHandler.removeCallbacks(mRunnable);
@@ -933,6 +933,8 @@ extends InputMethodService
             mMetaState &= ~KeyEvent.META_CTRL_MASK;
             mSpecial = false;
             setState();
+
+            Toast.makeText(GestureInputMethod.this, "cursor mode", Toast.LENGTH_SHORT).show();
 
             vibrate();
 
