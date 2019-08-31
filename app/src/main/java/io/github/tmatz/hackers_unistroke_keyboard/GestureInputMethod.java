@@ -899,7 +899,9 @@ extends InputMethodService
                     {
                         float dx = Math.abs(e.getRawX() - mCursorX);
                         float dy = Math.abs(e.getRawY() - mCursorY);
-                        mMoveDistance = dx + dy;
+                        mMoveDistance += dx + dy;
+                        mCursorX = e.getRawX();
+                        mCursorY = e.getRawY();
                         if (mMoveDistance > mCursorTolerance)
                         {
                             mHandler.removeCallbacks(mRunnable);
