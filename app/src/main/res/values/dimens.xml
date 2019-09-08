@@ -3,6 +3,7 @@
     <dimen name="button_width">40dip</dimen>
     <dimen name="button_height">36dip</dimen>
     <dimen name="cursor_tolerance">20dip</dimen>
+    <dimen name="period_tolerance">5dip</dimen>
     <dimen name="layout_margin">3dip</dimen>
     <dimen name="gestures_overlay_num_width">0dip</dimen>    
 </resources>

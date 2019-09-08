@@ -739,6 +739,7 @@ extends InputMethodService
     class OnGestureUnistrokeListener
     extends GestureOverlayViewOnGestureListener
     {
+        private final float mPeriodTolerance = getResources().getDimension(R.dimen.period_tolerance);
         private static final PredictionResult sPredictionFailed = new PredictionResult();
 
         private final GestureLibrary mMainStore;
@@ -766,7 +767,7 @@ extends InputMethodService
                 prediction = getPrediction(prediction, gesture, mMainStore, 1.0);
             }
 
-            if (Double.isNaN(prediction.score))
+            if (Double.isNaN(prediction.score) || prediction.score == 0)
             {
                 if (mSpecial)
                 {
@@ -807,6 +808,11 @@ extends InputMethodService
 
         private PredictionResult getPrediction(PredictionResult previous, Gesture gesture, GestureLibrary store, double scale)
         {
+            if (gesture.getLength() < mPeriodTolerance)
+            {
+                return previous;
+            }
+
             ArrayList<Prediction> predictions = store.recognize(gesture);
             if (predictions.size() > 0)
             {
