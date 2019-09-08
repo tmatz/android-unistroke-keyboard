@@ -808,14 +808,15 @@ extends InputMethodService
 
         private PredictionResult getPrediction(PredictionResult previous, Gesture gesture, GestureLibrary store, double scale)
         {
-            if (gesture.getLength() < mPeriodTolerance)
-            {
-                return previous;
-            }
-
             ArrayList<Prediction> predictions = store.recognize(gesture);
             if (predictions.size() > 0)
             {
+                // too short gesture is recognized as period
+                if (gesture.getLength() < mPeriodTolerance)
+                {
+                    scale = Double.NaN;
+                }
+
                 PredictionResult current = new PredictionResult(predictions.get(0), scale);
                 if (previous.score > current.score)
                 {
