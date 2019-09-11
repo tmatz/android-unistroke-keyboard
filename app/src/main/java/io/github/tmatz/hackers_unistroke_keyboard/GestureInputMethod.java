@@ -571,13 +571,15 @@ extends InputMethodService
 
     private static class PredictionResult
     {
-        public double score;
-        public String name;
-        public Prediction prediction;
+        public final double score;
+        public final String name;
+        public final Prediction prediction;
 
         public PredictionResult()
         {
             this.score = 0;
+            name = null;
+            prediction = null;
         }
 
         public PredictionResult(Prediction prediction, double scale)
@@ -823,7 +825,7 @@ extends InputMethodService
                     return previous;
                 }
 
-                if (isCtrlOn(GestureInputMethod.this.mMetaState))
+                if (isCtrlOn())
                 {
                     if (current.score < 1.5)
                     {
