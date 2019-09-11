@@ -272,6 +272,11 @@ extends InputMethodService
     {
         return isAltOn(mMetaState);
     }
+    
+    private boolean isSpecialOn()
+    {
+        return mSpecial;
+    }
 
     private void key(int keyCode)
     {
@@ -330,7 +335,7 @@ extends InputMethodService
             {
                 case KeyEvent.KEYCODE_DEL:
                 case KeyEvent.KEYCODE_FORWARD_DEL:
-                    if (!mSpecial && !isShiftOn() && !isCtrlOn() && !isAltOn())
+                    if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
                     {
                         sendKeyDown(keyCode, mMetaState);
                     }
@@ -406,7 +411,7 @@ extends InputMethodService
 
                 case KeyEvent.KEYCODE_DEL:
                 case KeyEvent.KEYCODE_FORWARD_DEL:
-                    if (!mSpecial && !isShiftOn() && !isCtrlOn() && !isAltOn())
+                    if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
                     {
                         sendKeyUp(keyCode, mMetaState);
                     }
@@ -759,7 +764,7 @@ extends InputMethodService
             final Gesture gesture = overlay.getGesture();
             PredictionResult prediction = sPredictionFailed;
 
-            if (mSpecial)
+            if (isSpecialOn())
             {
                 prediction = getPrediction(prediction, gesture, mStoreSpecial, 1.0);
             }
@@ -771,7 +776,7 @@ extends InputMethodService
 
             if (Double.isNaN(prediction.score) || prediction.score == 0)
             {
-                if (mSpecial)
+                if (isSpecialOn())
                 {
                     setInfo("");
                     key(KeyEvent.KEYCODE_PERIOD);
@@ -876,7 +881,7 @@ extends InputMethodService
             {
                 if (!mLongPress)
                 {
-                    if (!mSpecial)
+                    if (!isSpecialOn())
                     {
                         mLongPress = true;
                         onStartCursor(mLastEvent);
