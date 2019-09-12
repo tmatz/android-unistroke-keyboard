@@ -1,15 +1,28 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
-import android.content.*;
-import android.gesture.*;
-import android.graphics.*;
-import android.inputmethodservice.*;
-import android.os.*;
-import android.view.*;
-import android.view.View.*;
-import android.view.inputmethod.*;
-import android.widget.*;
-import java.util.*;
+import android.content.Context;
+import android.gesture.Gesture;
+import android.gesture.GestureLibraries;
+import android.gesture.GestureLibrary;
+import android.gesture.GestureOverlayView;
+import android.gesture.Prediction;
+import android.graphics.RectF;
+import android.inputmethodservice.InputMethodService;
+import android.os.Handler;
+import android.os.SystemClock;
+import android.os.Vibrator;
+import android.view.GestureDetector;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+import java.util.ArrayList;
 
 public class GestureInputMethod
 extends InputMethodService
@@ -33,6 +46,7 @@ extends InputMethodService
     private Button mAlt;
     private TextView mInfoAlphabet;
     private TextView mInfoNum;
+    private TextView mInfoCurrent;
     private boolean mSpecial;
     private int mMetaState;
     private boolean mShiftUsed;
@@ -333,6 +347,18 @@ extends InputMethodService
         {
             switch (keyCode)
             {
+                case KeyEvent.KEYCODE_PERIOD:
+                    if (isSpecialOn())
+                    {
+                        if (isShiftOn(mMetaState))
+                        {
+                            sendKeyDown(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~KeyEvent.META_SHIFT_MASK);
+                        }
+
+                        sendKeyDown(keyCode, mMetaState);
+                    }
+                    break;
+
                 case KeyEvent.KEYCODE_DEL:
                 case KeyEvent.KEYCODE_FORWARD_DEL:
                     if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
@@ -395,6 +421,21 @@ extends InputMethodService
             final int lastMetaState = mMetaState;
             switch (keyCode)
             {
+                case KeyEvent.KEYCODE_PERIOD:
+                    if (isSpecialOn())
+                    {
+                        sendKeyUp(keyCode, mMetaState);
+                        setInfo("");
+                        key(KeyEvent.KEYCODE_PERIOD);
+                    }
+                    else
+                    {
+                        setInfo("special");
+                        mSpecial = true;
+                        setState();
+                    }
+                    break;
+
                 case KeyEvent.KEYCODE_DPAD_LEFT:
                 case KeyEvent.KEYCODE_DPAD_RIGHT:
                 case KeyEvent.KEYCODE_DPAD_UP:
@@ -430,7 +471,7 @@ extends InputMethodService
                     mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
                     mSpecial = false;
                     break;
-
+                    
                 default:
                     sendKeyUp(keyCode, mMetaState);
                     mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
@@ -506,7 +547,17 @@ extends InputMethodService
 
     private void sendKeyDown(int keyCode, int metaState)
     {
+        if (isShiftOn() && !isShiftKey(keyCode))
+        {
+            
+        }
+        
         sendEvent(toKeyEvent(KeyEvent.ACTION_DOWN, keyCode, metaState));
+    }
+    
+    private static boolean isShiftKey(int keyCode)
+    {
+        return keyCode == KeyEvent.KEYCODE_SHIFT_LEFT || keyCode == KeyEvent.KEYCODE_SHIFT_RIGHT;
     }
 
     private void sendKeyUp(int keyCode, int metaState)
@@ -553,13 +604,30 @@ extends InputMethodService
             vibrator.vibrate(VIBRATION_STRONG_MS);
         }
     }
+    
+    private void setInfoView(TextView current)
+    {
+        mInfoCurrent = current;
+    }
 
     private void setInfo(TextView textView, String info)
     {
+        setInfoView(textView);
         mInfoAlphabet.setText("");
         mInfoNum.setText("");
         textView.setText(info);
     }
+    
+    private void setInfo(String info)
+    {
+        mInfoAlphabet.setText("");
+        mInfoNum.setText("");
+        if (mInfoCurrent == null)
+        {
+            mInfoCurrent = mInfoAlphabet;
+        }
+        mInfoCurrent.setText(info);
+    }    
 
     private static RectF getViewRect(View view)
     {
@@ -777,6 +845,12 @@ extends InputMethodService
                 prediction = getPrediction(prediction, gesture, mMainStore, 1.0);
             }
 
+            if (prediction.score == 0)
+            {
+                vibrateStrong();
+                return;
+            }
+
             if (Double.isNaN(prediction.score))
             {
                 if (isSpecialOn())
@@ -792,12 +866,6 @@ extends InputMethodService
                     setState();
                     return;
                 }
-            }
-
-            if (prediction.score == 0)
-            {
-                vibrateStrong();
-                return;
             }
 
             String name = prediction.name;
