@@ -938,15 +938,18 @@ extends InputMethodService
                         case STATE_REPEAT:
                             onRepeatMoveCursor(e);
                             return true;
+
+                        default:
+                            return true;
                     }
-                    return true;
 
                 case MotionEvent.ACTION_UP:
                     onFinishCursor(e);
                     return true;
-            }
 
-            return true;
+                default:
+                    return true;
+            }
         }
 
         private void onPrepareCursor(MotionEvent e)
@@ -993,8 +996,9 @@ extends InputMethodService
         private boolean isInGestureArea(MotionEvent e)
         {
             RectF viewRect = getViewRect(mGestureArea);
-            float ex = mLastEvent.getRawX();
-            float ey = mLastEvent.getRawY();
+
+            float ex = e.getRawX();
+            float ey = e.getRawY();
 
             return viewRect.contains(ex, ey);
         }
