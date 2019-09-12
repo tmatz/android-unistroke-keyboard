@@ -46,14 +46,14 @@ extends InputMethodService
     private View mView;
     private ViewGroup mGestureArea;
     private View mKeyboard;
-    private Button mShift;
-    private Button mCtrl;
-    private Button mAlt;
+    private Button mButtonShift;
+    private Button mButtonCtrl;
+    private Button mButtonAlt;
     private TextView mInfoAlphabet;
     private TextView mInfoNum;
     private TextView mInfoCurrent;
-    private boolean mSpecial;
     private int mMetaState;
+    private boolean mSpecialOn;
     private boolean mShiftUsed;
     private final Handler mHandler = new Handler();
 
@@ -115,9 +115,9 @@ extends InputMethodService
                 }
             });
 
-        mShift = mView.findViewById(R.id.button_shift);
-        mCtrl = mView.findViewById(R.id.button_ctrl);
-        mAlt = mView.findViewById(R.id.button_alt);
+        mButtonShift = mView.findViewById(R.id.button_shift);
+        mButtonCtrl = mView.findViewById(R.id.button_ctrl);
+        mButtonAlt = mView.findViewById(R.id.button_alt);
 
         setupKey(mView, R.id.button_shift);
         setupKey(mView, R.id.button_ctrl);
@@ -294,17 +294,17 @@ extends InputMethodService
 
     private boolean isSpecialOn()
     {
-        return mSpecial;
+        return mSpecialOn;
     }
 
     private void sendText(String str)
     {
         getCurrentInputConnection().commitText(str, str.length());
         mMetaState &= META_CAPS_LOCK;
-        mSpecial = false;
+        mSpecialOn = false;
         setState();
     }
-    
+
     private void key(int keyCode)
     {
         keyDown(keyCode);
@@ -317,81 +317,74 @@ extends InputMethodService
         {
             return;
         }
-        else if (KeyEvent.isModifierKey(keyCode))
-        {
-            switch (keyCode)
-            {
-                case KeyEvent.KEYCODE_CTRL_LEFT:
-                case KeyEvent.KEYCODE_CTRL_RIGHT:
-                    // clear used SHIFT
-                    if (isShiftOn() && mShiftUsed)
-                    {
-                        mMetaState &= ~META_SHIFT;
-                        mShiftUsed = false;
-                    }
-                    // toggle CTRL
-                    mMetaState ^= META_CTRL;
-                    break;
 
-                case KeyEvent.KEYCODE_SHIFT_LEFT:
-                case KeyEvent.KEYCODE_SHIFT_RIGHT:
-                    // switch tri-state
-                    if (isCapsLockOn())
-                    {
-                        mMetaState &= ~META_CAPS_LOCK;
-                    }
-                    else if (isShiftOn())
-                    {
-                        mMetaState &= ~META_SHIFT;
-                        mMetaState |= META_CAPS_LOCK;
-                    }
-                    else
-                    {
-                        mMetaState |= META_SHIFT;
-                    }
+        switch (keyCode)
+        {
+            case KeyEvent.KEYCODE_CTRL_LEFT:
+            case KeyEvent.KEYCODE_CTRL_RIGHT:
+                // clear used SHIFT
+                if (isShiftOn() && mShiftUsed)
+                {
+                    mMetaState &= ~META_SHIFT;
                     mShiftUsed = false;
-                    break;
+                }
+                // toggle CTRL
+                mMetaState ^= META_CTRL;
+                break;
 
-                case KeyEvent.KEYCODE_ALT_LEFT:
-                case KeyEvent.KEYCODE_ALT_RIGHT:
-                    // toggle ALT
-                    mMetaState ^= META_ALT;
-                    break;
-            }
-        }
-        else
-        {
-            switch (keyCode)
-            {
-                case KeyEvent.KEYCODE_PERIOD:
-                    if (isSpecialOn())
-                    {
-                        sendKeyDown(keyCode, mMetaState);
-                    }
-                    break;
+            case KeyEvent.KEYCODE_SHIFT_LEFT:
+            case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                // switch tri-state
+                if (isCapsLockOn())
+                {
+                    mMetaState &= ~META_CAPS_LOCK;
+                }
+                else if (isShiftOn())
+                {
+                    mMetaState &= ~META_SHIFT;
+                    mMetaState |= META_CAPS_LOCK;
+                }
+                else
+                {
+                    mMetaState |= META_SHIFT;
+                }
+                mShiftUsed = false;
+                break;
 
-                case KeyEvent.KEYCODE_DEL:
-                case KeyEvent.KEYCODE_FORWARD_DEL:
-                    if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
-                    {
-                        sendKeyDown(keyCode, mMetaState);
-                    }
-                    break;
+            case KeyEvent.KEYCODE_ALT_LEFT:
+            case KeyEvent.KEYCODE_ALT_RIGHT:
+                // toggle ALT
+                mMetaState ^= META_ALT;
+                break;
 
-                case KeyEvent.KEYCODE_ENTER:
-                    if (isEditorActionRequested())
-                    {
-                        getCurrentInputConnection().performEditorAction(getEditorAction());
-                        return;
-                    }
-
+            case KeyEvent.KEYCODE_PERIOD:
+                if (isSpecialOn())
+                {
                     sendKeyDown(keyCode, mMetaState);
-                    break;
+                }
+                break;
 
-                default:
+            case KeyEvent.KEYCODE_DEL:
+            case KeyEvent.KEYCODE_FORWARD_DEL:
+                if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
+                {
                     sendKeyDown(keyCode, mMetaState);
-                    break;
-            }
+                }
+                break;
+
+            case KeyEvent.KEYCODE_ENTER:
+                if (isEditorActionRequested())
+                {
+                    getCurrentInputConnection().performEditorAction(getEditorAction());
+                    return;
+                }
+
+                sendKeyDown(keyCode, mMetaState);
+                break;
+
+            default:
+                sendKeyDown(keyCode, mMetaState);
+                break;
         }
 
         setState();
@@ -403,77 +396,70 @@ extends InputMethodService
         {
             return;
         }
-        else if (KeyEvent.isModifierKey(keyCode))
+
+        switch (keyCode)
         {
-            switch (keyCode)
-            {
-                case KeyEvent.KEYCODE_CTRL_LEFT:
-                case KeyEvent.KEYCODE_CTRL_RIGHT:
-                case KeyEvent.KEYCODE_SHIFT_LEFT:
-                case KeyEvent.KEYCODE_SHIFT_RIGHT:
-                case KeyEvent.KEYCODE_ALT_LEFT:
-                case KeyEvent.KEYCODE_ALT_RIGHT:
-                    mSpecial = false;
-                    break;
-            }
-        }
-        else
-        {
-            switch (keyCode)
-            {
-                case KeyEvent.KEYCODE_PERIOD:
-                    if (isSpecialOn())
-                    {
-                        sendKeyUp(keyCode, mMetaState);
-                        mMetaState &= META_CAPS_LOCK;
-                        mSpecial = false;
-                    }
-                    else
-                    {
-                        mSpecial = true;
-                    }
-                    break;
+            case KeyEvent.KEYCODE_CTRL_LEFT:
+            case KeyEvent.KEYCODE_CTRL_RIGHT:
+            case KeyEvent.KEYCODE_SHIFT_LEFT:
+            case KeyEvent.KEYCODE_SHIFT_RIGHT:
+            case KeyEvent.KEYCODE_ALT_LEFT:
+            case KeyEvent.KEYCODE_ALT_RIGHT:
+                mSpecialOn = false;
+                break;
 
-                case KeyEvent.KEYCODE_DPAD_LEFT:
-                case KeyEvent.KEYCODE_DPAD_RIGHT:
-                case KeyEvent.KEYCODE_DPAD_UP:
-                case KeyEvent.KEYCODE_DPAD_DOWN:
-                    sendKeyUp(keyCode, mMetaState);
-                    mMetaState &= ~(META_CTRL | META_ALT);
-                    mSpecial = false;
-                    if (isShiftOn())
-                    {
-                        mShiftUsed = true;
-                    }
-                    break;
-
-                case KeyEvent.KEYCODE_DEL:
-                case KeyEvent.KEYCODE_FORWARD_DEL:
-                    if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
-                    {
-                        sendKeyUp(keyCode, mMetaState);
-                    }
-                    mMetaState &= META_CAPS_LOCK;
-                    mSpecial = false;
-                    break;
-
-                case KeyEvent.KEYCODE_ENTER:
-                    if (isEditorActionRequested())
-                    {
-                        return;
-                    }
-
+            case KeyEvent.KEYCODE_PERIOD:
+                if (isSpecialOn())
+                {
                     sendKeyUp(keyCode, mMetaState);
                     mMetaState &= META_CAPS_LOCK;
-                    mSpecial = false;
-                    break;
+                    mSpecialOn = false;
+                }
+                else
+                {
+                    mSpecialOn = true;
+                }
+                break;
 
-                default:
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+            case KeyEvent.KEYCODE_DPAD_UP:
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                sendKeyUp(keyCode, mMetaState);
+                mMetaState &= ~(META_CTRL | META_ALT);
+                mSpecialOn = false;
+                if (isShiftOn())
+                {
+                    mShiftUsed = true;
+                }
+                break;
+
+            case KeyEvent.KEYCODE_DEL:
+            case KeyEvent.KEYCODE_FORWARD_DEL:
+                if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
+                {
                     sendKeyUp(keyCode, mMetaState);
-                    mMetaState &= META_CAPS_LOCK;
-                    mSpecial = false;
-                    break;
-            }
+                }
+                mMetaState &= META_CAPS_LOCK;
+                mSpecialOn = false;
+                break;
+
+            case KeyEvent.KEYCODE_ENTER:
+                if (isEditorActionRequested())
+                {
+                    return;
+                }
+
+                sendKeyUp(keyCode, mMetaState);
+                mMetaState &= META_CAPS_LOCK;
+                mSpecialOn = false;
+                break;
+
+            default:
+                sendKeyUp(keyCode, mMetaState);
+                mMetaState &= META_CAPS_LOCK;
+                mSpecialOn = false;
+                break;
         }
 
         setState();
@@ -481,55 +467,47 @@ extends InputMethodService
 
     private void keyRepeat(int keyCode)
     {
-        if (KeyEvent.isModifierKey(keyCode))
+        if (keyCode == KeyEvent.KEYCODE_UNKNOWN || KeyEvent.isModifierKey(keyCode))
         {
             return;
         }
 
-        switch (keyCode)
-        {
-            case KeyEvent.KEYCODE_UNKNOWN:
-                break;
-
-            default:
-                sendKeyRepeat(keyCode, mMetaState);
-                break;
-        }
+        sendKeyRepeat(keyCode, mMetaState);
     }
 
     private void setState()
     {
         if (isCapsLockOn())
         {
-            mShift.setBackgroundResource(R.drawable.button_locked);
+            mButtonShift.setBackgroundResource(R.drawable.button_locked);
         }
         else if (isShiftOn())
         {
-            mShift.setBackgroundResource(R.drawable.button_active);
+            mButtonShift.setBackgroundResource(R.drawable.button_active);
         }
         else
         {
-            mShift.setBackgroundResource(R.drawable.button);
+            mButtonShift.setBackgroundResource(R.drawable.button);
         }
 
         if (isCtrlOn())
         {
-            mCtrl.setBackgroundResource(R.drawable.button_active);
+            mButtonCtrl.setBackgroundResource(R.drawable.button_active);
         }
         else
         {
-            mCtrl.setBackgroundResource(R.drawable.button);
+            mButtonCtrl.setBackgroundResource(R.drawable.button);
         }
 
         if (isAltOn())
         {
-            mAlt.setBackgroundResource(R.drawable.button_active);
+            mButtonAlt.setBackgroundResource(R.drawable.button_active);
         }
         else
         {
-            mAlt.setBackgroundResource(R.drawable.button);
+            mButtonAlt.setBackgroundResource(R.drawable.button);
         }
-        
+
         if (isSpecialOn())
         {
             setInfo("special");
@@ -838,7 +816,7 @@ extends InputMethodService
         public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
         {
             setInfoView(mInfo);
-            
+
             final Gesture gesture = overlay.getGesture();
             PredictionResult prediction = sPredictionFailed;
 
@@ -1000,7 +978,7 @@ extends InputMethodService
         public void onStartCursor(MotionEvent e)
         {
             mMetaState &= ~KeyEvent.META_CTRL_MASK;
-            mSpecial = false;
+            mSpecialOn = false;
             setState();
 
             Toast.makeText(GestureInputMethod.this, "cursor mode", Toast.LENGTH_SHORT).show();
