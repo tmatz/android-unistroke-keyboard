@@ -876,14 +876,18 @@ extends InputMethodService
     private abstract class OnTouchCursorGestureListener
     implements OnTouchListener
     {
+        private static final int STATE_START = 0;
+        private static final int STATE_MOVE = 1;
+        private static final int STATE_REPEAT = 2;
+        private static final int STATE_BACK_TO_MOVE = 3;
+        private static final int STATE_FINISH = 4;
+
         private final float mCursorTolerance = getResources().getDimension(R.dimen.cursor_tolerance);
 
-        private boolean mLongPress;
+        private int mCursorState;
         private float mCursorX;
         private float mCursorY;
         private float mMoveDistance;
-        private boolean mRepeating;
-        private boolean mRepeated;
         private MotionEvent mLastEvent;
 
         private final Runnable mRunnable = new Runnable()
@@ -891,17 +895,22 @@ extends InputMethodService
             @Override
             public void run()
             {
-                if (!mLongPress)
+                switch (mCursorState)
                 {
-                    if (!mKeyboard.isSpecialOn())
-                    {
-                        mLongPress = true;
+                    case STATE_START:
                         onStartCursor(mLastEvent);
-                    }
-                }
-                else
-                {
-                    repeatMoveCursor(true);
+                        break;
+
+                    case STATE_REPEAT:
+                        onRepeatCursor();
+                        break;
+
+                    case STATE_BACK_TO_MOVE:
+                        onBackToMoveCursor();
+                        break;
+
+                    default:
+                        break;
                 }
             }
         };
@@ -912,140 +921,163 @@ extends InputMethodService
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
-                    mLongPress = false;
-                    mLastEvent = e;
-                    mCursorX = e.getRawX();
-                    mCursorY = e.getRawY();
-                    mMoveDistance = 0;
-                    mHandler.postDelayed(mRunnable, CURSOR_GESTURE_START_MS);
+                    if (!mKeyboard.isSpecialOn())
+                    {
+                        onPrepareCursor(e);
+                    }
                     break;
 
                 case MotionEvent.ACTION_MOVE:
-                    if (!mLongPress)
+                    switch (mCursorState)
                     {
-                        float dx = Math.abs(e.getRawX() - mCursorX);
-                        float dy = Math.abs(e.getRawY() - mCursorY);
-                        mMoveDistance += dx + dy;
-                        mCursorX = e.getRawX();
-                        mCursorY = e.getRawY();
-                        if (mMoveDistance > mCursorTolerance)
-                        {
-                            mHandler.removeCallbacks(mRunnable);
-                        }
-                    }
-                    else
-                    {
-                        onMoveCursor(e);
+                        case STATE_START:
+                            onStartMoveCursor(e);
+                            break;
+
+                        case STATE_MOVE:
+                            onMoveCursor(e);
+                            break;
+
+                        case STATE_REPEAT:
+                            onRepeatMoveCursor(e);
+                            break;
+
+                        default:
+                            break;
                     }
                     break;
 
                 case MotionEvent.ACTION_UP:
-                    if (!mLongPress)
-                    {
-                        mHandler.removeCallbacks(mRunnable);
-                    }
-                    else
-                    {
-                        onFinishCursor(e);
-                        mLongPress = false;
-                    }
-                    mLastEvent = null;
+                    onFinishCursor(e);
+                    break;
+
+                default:
                     break;
             }
 
             return true;
         }
 
+        private void onPrepareCursor(MotionEvent e)
+        {
+            mCursorState = STATE_START;
+            mLastEvent = e;
+            mCursorX = e.getRawX();
+            mCursorY = e.getRawY();
+            mMoveDistance = 0;
+            mHandler.postDelayed(mRunnable, CURSOR_GESTURE_START_MS);
+        }
+
+        private void onStartMoveCursor(MotionEvent e)
+        {
+            float dx = Math.abs(e.getRawX() - mCursorX);
+            float dy = Math.abs(e.getRawY() - mCursorY);
+
+            mMoveDistance += dx + dy;
+            mCursorX = e.getRawX();
+            mCursorY = e.getRawY();
+
+            if (mMoveDistance > mCursorTolerance)
+            {
+                mCursorState = STATE_FINISH;
+                mHandler.removeCallbacks(mRunnable);
+            }
+        }
+
         public void onStartCursor(MotionEvent e)
         {
             mKeyboard.mMetaState &= ~META_CTRL;
-            mKeyboard.mSpecialOn = false;
             setState();
 
             Toast.makeText(GestureInputMethod.this, "cursor mode", Toast.LENGTH_SHORT).show();
 
             vibrate();
 
+            mCursorState = STATE_MOVE;
             mCursorX = e.getRawX();
             mCursorY = e.getRawY();
             mLastEvent = e;
-            mRepeating = false;
-            mRepeated = false;
+        }
+
+        private boolean isInGestureArea(MotionEvent e)
+        {
+            RectF viewRect = getViewRect(mGestureArea);
+
+            float ex = e.getRawX();
+            float ey = e.getRawY();
+
+            return viewRect.contains(ex, ey);
         }
 
         public void onMoveCursor(MotionEvent e)
         {
             mLastEvent = e;
-            moveCursor();
+
+            if (!isInGestureArea(e))
+            {
+                mCursorState = STATE_REPEAT;
+                mHandler.postDelayed(mRunnable, 100);
+                return;
+            }
+
+            final float dx = mLastEvent.getRawX() - mCursorX;
+            final float dy = mLastEvent.getRawY() - mCursorY;
+
+            if (Math.abs(dx) >= mCursorTolerance)
+            {
+                mKeyboard.key(dx < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                mCursorX += Math.copySign(mCursorTolerance, dx);
+            }
+
+            if (Math.abs(dy) >= mCursorTolerance)
+            {
+                mKeyboard.key(dy < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                mCursorY += Math.copySign(mCursorTolerance, dy);
+            }
+        }
+
+        protected void onRepeatMoveCursor(MotionEvent e)
+        {
+            mLastEvent = e;
+
+            if (isInGestureArea(e))
+            {
+                mCursorState = STATE_BACK_TO_MOVE;
+                mHandler.postDelayed(mRunnable, 400);
+            }
+        }
+
+        private void onRepeatCursor()
+        {
+            final RectF gestureArea = getViewRect(mGestureArea);
+            final float ex = mLastEvent.getRawX();
+            final float ey = mLastEvent.getRawY();
+
+            if (!gestureArea.contains(ex, gestureArea.top))
+            {
+                mKeyboard.key(ex < gestureArea.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+            }
+
+            if (!gestureArea.contains(gestureArea.left, ey))
+            {
+                mKeyboard.key(ey < gestureArea.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+            }
+
+            mHandler.postDelayed(mRunnable, 100);
+        }
+
+        public void onBackToMoveCursor()
+        {
+            mCursorState = STATE_MOVE;
+            mCursorX = mLastEvent.getRawX();
+            mCursorY = mLastEvent.getRawY();
         }
 
         public void onFinishCursor(MotionEvent e)
         {
+            mCursorState = STATE_FINISH;
             mHandler.removeCallbacks(mRunnable);
-            mRepeating = false;
-            mRepeated = false;
-        }
-
-        private void moveCursor()
-        {
-            if (mRepeating || mRepeated)
-            {
-                return;
-            }
-
-            repeatMoveCursor(false);
-
-            if (!mRepeating)
-            {
-                final float dx = mLastEvent.getRawX() - mCursorX;
-                final float dy = mLastEvent.getRawY() - mCursorY;
-
-                if (Math.abs(dx) >= mCursorTolerance)
-                {
-                    mKeyboard.key(dx < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
-                    mCursorX += Math.copySign(mCursorTolerance, dx);
-                }
-
-                if (Math.abs(dy) >= mCursorTolerance)
-                {
-                    mKeyboard.key(dy < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-                    mCursorY += Math.copySign(mCursorTolerance, dy);
-                }
-            }
-        }
-
-        private void repeatMoveCursor(boolean fromPost)
-        {
-            final RectF viewRect = getViewRect(mGestureArea);
-            final float ex = mLastEvent.getRawX();
-            final float ey = mLastEvent.getRawY();
-
-            mRepeated = mRepeating;
-            mRepeating = false;
-            if (!viewRect.contains(ex, viewRect.top))
-            {
-                mKeyboard.key(ex < viewRect.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
-                mRepeating = true;
-            }
-            if (!viewRect.contains(viewRect.left, ey))
-            {
-                mKeyboard.key(ey < viewRect.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-                mRepeating = true;
-            }
-
-            if (mRepeating)
-            {
-                mHandler.postDelayed(mRunnable, 100);
-            }
-            else if (mRepeated)
-            {
-                mHandler.postDelayed(mRunnable, 200);
-            }
-            else if (fromPost)
-            {
-                mCursorX = mLastEvent.getRawX();
-                mCursorY = mLastEvent.getRawY();
-            }
+            mLastEvent = null;
         }
     }
 
