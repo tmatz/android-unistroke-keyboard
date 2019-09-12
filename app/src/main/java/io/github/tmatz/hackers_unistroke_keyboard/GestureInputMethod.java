@@ -908,6 +908,9 @@ extends InputMethodService
                     case STATE_BACK_TO_MOVE:
                         onBackToMoveCursor();
                         break;
+
+                    default:
+                        break;
                 }
             }
         };
@@ -922,34 +925,37 @@ extends InputMethodService
                     {
                         onPrepareCursor(e);
                     }
-                    return true;
+                    break;
 
                 case MotionEvent.ACTION_MOVE:
                     switch (mCursorState)
                     {
                         case STATE_START:
                             onStartMoveCursor(e);
-                            return true;
+                            break;
 
                         case STATE_MOVE:
                             onMoveCursor(e);
-                            return true;
+                            break;
 
                         case STATE_REPEAT:
                             onRepeatMoveCursor(e);
-                            return true;
+                            break;
 
                         default:
-                            return true;
+                            break;
                     }
+                    break;
 
                 case MotionEvent.ACTION_UP:
                     onFinishCursor(e);
-                    return true;
+                    break;
 
                 default:
-                    return true;
+                    break;
             }
+
+            return true;
         }
 
         private void onPrepareCursor(MotionEvent e)
