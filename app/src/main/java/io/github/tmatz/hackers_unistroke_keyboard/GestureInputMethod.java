@@ -1,15 +1,28 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
-import android.content.*;
-import android.gesture.*;
-import android.graphics.*;
-import android.inputmethodservice.*;
-import android.os.*;
-import android.view.*;
-import android.view.View.*;
-import android.view.inputmethod.*;
-import android.widget.*;
-import java.util.*;
+import android.content.Context;
+import android.gesture.Gesture;
+import android.gesture.GestureLibraries;
+import android.gesture.GestureLibrary;
+import android.gesture.GestureOverlayView;
+import android.gesture.Prediction;
+import android.graphics.RectF;
+import android.inputmethodservice.InputMethodService;
+import android.os.Handler;
+import android.os.SystemClock;
+import android.os.Vibrator;
+import android.view.GestureDetector;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+import java.util.ArrayList;
 
 public class GestureInputMethod
 extends InputMethodService
@@ -20,6 +33,11 @@ extends InputMethodService
     private static final int VIBRATION_MS = 15;
     private static final int VIBRATION_STRONG_MS = 30;
 
+    private static final int META_CAPS_LOCK = KeyEvent.META_CAPS_LOCK_ON;
+    private static final int META_SHIFT = KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON;
+    private static final int META_CTRL = KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON;
+    private static final int META_ALT = KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON;
+
     private GestureLibrary mStoreAlpabet;
     private GestureLibrary mStoreNumber;
     private GestureLibrary mStoreSpecial;
@@ -27,15 +45,14 @@ extends InputMethodService
 
     private View mView;
     private ViewGroup mGestureArea;
-    private View mKeyboard;
-    private Button mShift;
-    private Button mCtrl;
-    private Button mAlt;
+    private View mKeyboardView;
+    private Button mButtonShift;
+    private Button mButtonCtrl;
+    private Button mButtonAlt;
     private TextView mInfoAlphabet;
     private TextView mInfoNum;
-    private boolean mSpecial;
-    private int mMetaState;
-    private boolean mShiftUsed;
+    private TextView mInfoCurrent;
+    private final Keyboard mKeyboard = new Keyboard();
     private final Handler mHandler = new Handler();
 
     @Override
@@ -96,15 +113,15 @@ extends InputMethodService
                 }
             });
 
-        mShift = mView.findViewById(R.id.button_shift);
-        mCtrl = mView.findViewById(R.id.button_ctrl);
-        mAlt = mView.findViewById(R.id.button_alt);
+        mButtonShift = mView.findViewById(R.id.button_shift);
+        mButtonCtrl = mView.findViewById(R.id.button_ctrl);
+        mButtonAlt = mView.findViewById(R.id.button_alt);
 
-        setupKey(mView, R.id.button_shift);
-        setupKey(mView, R.id.button_ctrl);
-        setupKey(mView, R.id.button_alt);
-        setupKey(mView, R.id.button_del);
-        setupKey(mView, R.id.button_enter);
+        setupButtonKey(mView, R.id.button_shift);
+        setupButtonKey(mView, R.id.button_ctrl);
+        setupButtonKey(mView, R.id.button_alt);
+        setupButtonKey(mView, R.id.button_del);
+        setupButtonKey(mView, R.id.button_enter);
 
         final Button extendKey = mView.findViewById(R.id.button_key);
         extendKey.setOnClickListener(
@@ -113,39 +130,39 @@ extends InputMethodService
                 @Override
                 public void onClick(View p1)
                 {
-                    if (mKeyboard.getVisibility() == View.VISIBLE)
+                    if (mKeyboardView.getVisibility() == View.VISIBLE)
                     {
-                        mKeyboard.setVisibility(View.INVISIBLE);
+                        mKeyboardView.setVisibility(View.INVISIBLE);
                         unistrokeArea.setVisibility(View.VISIBLE);
                     }
                     else
                     {
-                        mKeyboard.setVisibility(View.VISIBLE);
+                        mKeyboardView.setVisibility(View.VISIBLE);
                         unistrokeArea.setVisibility(View.INVISIBLE);
                     }
                 }
             });
 
-        mKeyboard = getLayoutInflater().inflate(R.layout.keyboard, null);
+        mKeyboardView = getLayoutInflater().inflate(R.layout.keyboard, null);
 
-        setupKey(mKeyboard, R.id.keyboard_button_h);
-        setupKey(mKeyboard, R.id.keyboard_button_j);
-        setupKey(mKeyboard, R.id.keyboard_button_k);
-        setupKey(mKeyboard, R.id.keyboard_button_l);
-        setupKey(mKeyboard, R.id.keyboard_button_z);
-        setupKey(mKeyboard, R.id.keyboard_button_x);
-        setupKey(mKeyboard, R.id.keyboard_button_c);
-        setupKey(mKeyboard, R.id.keyboard_button_v);
-        setupKey(mKeyboard, R.id.keyboard_button_home);
-        setupKey(mKeyboard, R.id.keyboard_button_move_end);
-        setupKey(mKeyboard, R.id.keyboard_button_dpad_left);
-        setupKey(mKeyboard, R.id.keyboard_button_dpad_right);
-        setupKey(mKeyboard, R.id.keyboard_button_dpad_up);
-        setupKey(mKeyboard, R.id.keyboard_button_dpad_down);
-        setupKey(mKeyboard, R.id.keyboard_button_forward_del);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_h);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_j);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_k);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_l);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_z);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_x);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_c);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_v);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_home);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_move_end);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_dpad_left);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_dpad_right);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_dpad_up);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_dpad_down);
+        setupButtonKey(mKeyboardView, R.id.keyboard_button_forward_del);
 
-        mGestureArea.addView(mKeyboard);
-        mKeyboard.setVisibility(View.INVISIBLE);
+        mGestureArea.addView(mKeyboardView);
+        mKeyboardView.setVisibility(View.INVISIBLE);
 
         return mView;
     }
@@ -154,6 +171,7 @@ extends InputMethodService
     public void onStartInput(EditorInfo attribute, boolean restarting)
     {
         super.onStartInput(attribute, restarting);
+        mKeyboard.clearState();
     }
 
     @Override
@@ -194,7 +212,7 @@ extends InputMethodService
         }
     }
 
-    private void setupKey(View root, int id)
+    private void setupButtonKey(View root, int id)
     {
         final Button button = root.findViewById(id);
         final String tag = (String)button.getTag();
@@ -233,280 +251,52 @@ extends InputMethodService
         return store;
     }
 
-    private static boolean isCapsLockOn(int metaState)
-    {
-        return (metaState & KeyEvent.META_CAPS_LOCK_ON) != 0;
-    }
-
-    private boolean isCapsLockOn()
-    {
-        return isCapsLockOn(mMetaState);
-    }
-
-    private static boolean isShiftOn(int metaState)
-    {
-        return (metaState & KeyEvent.META_SHIFT_MASK) != 0;
-    }
-
-    private boolean isShiftOn()
-    {
-        return isShiftOn(mMetaState);
-    }
-
-    private static boolean isCtrlOn(int metaState)
-    {
-        return (metaState & KeyEvent.META_CTRL_MASK) != 0;
-    }
-
-    private boolean isCtrlOn()
-    {
-        return isCtrlOn(mMetaState);
-    }
-
-    private static boolean isAltOn(int metaState)
-    {
-        return (metaState & KeyEvent.META_ALT_MASK) != 0;
-    }
-
-    private boolean isAltOn()
-    {
-        return isAltOn(mMetaState);
-    }
-
-    private void key(int keyCode)
-    {
-        keyDown(keyCode);
-        keyUp(keyCode);
-    }
-
-    private void keyDown(int keyCode)
-    {
-        if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
-        {
-            return;
-        }
-        else if (KeyEvent.isModifierKey(keyCode))
-        {
-            switch (keyCode)
-            {
-                case KeyEvent.KEYCODE_CTRL_LEFT:
-                case KeyEvent.KEYCODE_CTRL_RIGHT:
-                    if (isShiftOn() && mShiftUsed)
-                    {
-                        mMetaState &= ~KeyEvent.META_SHIFT_MASK;
-                        mShiftUsed = false;
-                    }
-
-                    mMetaState ^= (KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
-                    break;
-
-                case KeyEvent.KEYCODE_SHIFT_LEFT:
-                case KeyEvent.KEYCODE_SHIFT_RIGHT:
-                    if (isCapsLockOn())
-                    {
-                        mMetaState &= ~KeyEvent.META_SHIFT_MASK;
-                        mMetaState &= ~KeyEvent.META_CAPS_LOCK_ON;
-                    }
-                    else if (isShiftOn())
-                    {
-                        mMetaState |= KeyEvent.META_CAPS_LOCK_ON;
-                    }
-                    else
-                    {
-                        mMetaState |= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
-                    }
-                    mShiftUsed = false;
-                    break;
-
-                case KeyEvent.KEYCODE_ALT_LEFT:
-                case KeyEvent.KEYCODE_ALT_RIGHT:
-                    mMetaState ^= (KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
-                    break;
-            }
-        }
-        else
-        {
-            switch (keyCode)
-            {
-                case KeyEvent.KEYCODE_DEL:
-                case KeyEvent.KEYCODE_FORWARD_DEL:
-                    if (!mSpecial && !isShiftOn() && !isCtrlOn() && !isAltOn())
-                    {
-                        sendKeyDown(keyCode, mMetaState);
-                    }
-                    break;
-
-                case KeyEvent.KEYCODE_ENTER:
-                    if (isEditorActionRequested())
-                    {
-                        getCurrentInputConnection().performEditorAction(getEditorAction());
-                        return;
-                    }
-
-                    if (isShiftOn(mMetaState))
-                    {
-                        sendKeyDown(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~KeyEvent.META_SHIFT_MASK);
-                    }
-
-                    sendKeyDown(keyCode, mMetaState);
-                    break;
-
-                default:
-                    if (isShiftOn(mMetaState))
-                    {
-                        sendKeyDown(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~KeyEvent.META_SHIFT_MASK);
-                    }
-
-                    sendKeyDown(keyCode, mMetaState);
-                    break;
-            }
-        }
-
-        setState();
-    }
-
-    private void keyUp(int keyCode)
-    {
-        if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
-        {
-            return;
-        }
-        else if (KeyEvent.isModifierKey(keyCode))
-        {
-            switch (keyCode)
-            {
-                case KeyEvent.KEYCODE_CTRL_LEFT:
-                case KeyEvent.KEYCODE_CTRL_RIGHT:
-                case KeyEvent.KEYCODE_SHIFT_LEFT:
-                case KeyEvent.KEYCODE_SHIFT_RIGHT:
-                case KeyEvent.KEYCODE_ALT_LEFT:
-                case KeyEvent.KEYCODE_ALT_RIGHT:
-                    mSpecial = false;
-                    break;
-            }
-        }
-        else
-        {
-            final int lastMetaState = mMetaState;
-            switch (keyCode)
-            {
-                case KeyEvent.KEYCODE_DPAD_LEFT:
-                case KeyEvent.KEYCODE_DPAD_RIGHT:
-                case KeyEvent.KEYCODE_DPAD_UP:
-                case KeyEvent.KEYCODE_DPAD_DOWN:
-                    sendKeyUp(keyCode, mMetaState);
-                    // clear CTRL, ALT
-                    mMetaState &= KeyEvent.META_SHIFT_MASK | KeyEvent.META_CAPS_LOCK_ON;
-                    if (isShiftOn())
-                    {
-                        mShiftUsed = true;
-                    }
-                    mSpecial = false;
-                    break;
-
-                case KeyEvent.KEYCODE_DEL:
-                case KeyEvent.KEYCODE_FORWARD_DEL:
-                    if (!mSpecial && !isShiftOn() && !isCtrlOn() && !isAltOn())
-                    {
-                        sendKeyUp(keyCode, mMetaState);
-                    }
-                    // clear SHIFT, CTRL, ALT
-                    mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
-                    mSpecial = false;
-                    break;
-
-                case KeyEvent.KEYCODE_ENTER:
-                    if (isEditorActionRequested())
-                    {
-                        return;
-                    }
-
-                    sendKeyUp(keyCode, mMetaState);
-                    mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
-                    mSpecial = false;
-                    break;
-
-                default:
-                    sendKeyUp(keyCode, mMetaState);
-                    mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
-                    mSpecial = false;
-                    break;
-            }
-
-            if (isShiftOn(lastMetaState))
-            {
-                sendKeyUp(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~KeyEvent.META_SHIFT_MASK);
-            }
-        }
-
-        setState();
-    }
-
-    private void keyRepeat(int keyCode)
-    {
-        if (KeyEvent.isModifierKey(keyCode))
-        {
-            return;
-        }
-
-        switch (keyCode)
-        {
-            case KeyEvent.KEYCODE_UNKNOWN:
-                break;
-
-            default:
-                sendKeyRepeat(keyCode, mMetaState);
-                break;
-        }
-    }
-
     private void setState()
     {
-        if (isCapsLockOn())
+        if (mKeyboard.isCapsLockOn())
         {
-            mShift.setBackgroundResource(R.drawable.button_locked);
+            mButtonShift.setBackgroundResource(R.drawable.button_locked);
         }
-        else if (isShiftOn())
+        else if (mKeyboard.isShiftOn())
         {
-            mShift.setBackgroundResource(R.drawable.button_active);
+            mButtonShift.setBackgroundResource(R.drawable.button_active);
         }
         else
         {
-            mShift.setBackgroundResource(R.drawable.button);
+            mButtonShift.setBackgroundResource(R.drawable.button);
         }
 
-        if (isCtrlOn())
+        if (mKeyboard.isCtrlOn())
         {
-            mCtrl.setBackgroundResource(R.drawable.button_active);
+            mButtonCtrl.setBackgroundResource(R.drawable.button_active);
         }
         else
         {
-            mCtrl.setBackgroundResource(R.drawable.button);
+            mButtonCtrl.setBackgroundResource(R.drawable.button);
         }
 
-        if (isAltOn())
+        if (mKeyboard.isAltOn())
         {
-            mAlt.setBackgroundResource(R.drawable.button_active);
+            mButtonAlt.setBackgroundResource(R.drawable.button_active);
         }
         else
         {
-            mAlt.setBackgroundResource(R.drawable.button);
+            mButtonAlt.setBackgroundResource(R.drawable.button);
+        }
+
+        if (mKeyboard.isSpecialOn())
+        {
+            setInfo("special");
+        }
+        else
+        {
+            setInfo("");
         }
     }
 
     private void sendEvent(KeyEvent e)
     {
         getCurrentInputConnection().sendKeyEvent(e);
-    }
-
-    private void sendKeyDown(int keyCode, int metaState)
-    {
-        sendEvent(toKeyEvent(KeyEvent.ACTION_DOWN, keyCode, metaState));
-    }
-
-    private void sendKeyUp(int keyCode, int metaState)
-    {
-        sendEvent(toKeyEvent(KeyEvent.ACTION_UP, keyCode, metaState));
     }
 
     private void sendKeyRepeat(int keyCode, int metaState)
@@ -549,12 +339,22 @@ extends InputMethodService
         }
     }
 
-    private void setInfo(TextView textView, String info)
+    private void setInfoView(TextView current)
     {
+        mInfoCurrent = current;
+    }
+
+    private void setInfo(String info)
+    {
+        if (mInfoCurrent == null)
+        {
+            mInfoCurrent = mInfoAlphabet;
+        }
+
         mInfoAlphabet.setText("");
         mInfoNum.setText("");
-        textView.setText(info);
-    }
+        mInfoCurrent.setText(info);
+    }    
 
     private static RectF getViewRect(View view)
     {
@@ -569,20 +369,267 @@ extends InputMethodService
         return new RectF(x, y, x + w, y + h);
     }
 
+    private class Keyboard
+    {
+        private int mMetaState;
+        private boolean mSpecialOn;
+        private boolean mShiftUsed;
+
+        public void clearState()
+        {
+            mMetaState = 0;
+            mSpecialOn = false;
+            mShiftUsed = false;
+        }
+
+        private boolean isCapsLockOn()
+        {
+            return (mMetaState & META_CAPS_LOCK) != 0;
+        }
+
+        private boolean isShiftOn()
+        {
+            return (mMetaState & META_SHIFT) != 0;
+        }
+
+        private boolean isCtrlOn()
+        {
+            return (mMetaState & META_CTRL) != 0;
+        }
+
+        private boolean isAltOn()
+        {
+            return (mMetaState & META_ALT) != 0;
+        }
+
+        private boolean isSpecialOn()
+        {
+            return mSpecialOn;
+        }
+
+        private void sendText(String str)
+        {
+            getCurrentInputConnection().commitText(str, str.length());
+            mMetaState &= META_CAPS_LOCK;
+            mSpecialOn = false;
+            setState();
+        }
+
+        private void key(int keyCode)
+        {
+            keyDown(keyCode);
+            keyUp(keyCode);
+        }
+
+        private void keyDown(int keyCode)
+        {
+            if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
+            {
+                return;
+            }
+
+            switch (keyCode)
+            {
+                case KeyEvent.KEYCODE_CTRL_LEFT:
+                case KeyEvent.KEYCODE_CTRL_RIGHT:
+                    // clear used SHIFT
+                    if (isShiftOn() && mShiftUsed)
+                    {
+                        mMetaState &= ~META_SHIFT;
+                        mShiftUsed = false;
+                    }
+                    // toggle CTRL
+                    mMetaState ^= META_CTRL;
+                    break;
+
+                case KeyEvent.KEYCODE_SHIFT_LEFT:
+                case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                    // switch tri-state
+                    if (isCapsLockOn())
+                    {
+                        mMetaState &= ~META_CAPS_LOCK;
+                    }
+                    else if (isShiftOn())
+                    {
+                        mMetaState &= ~META_SHIFT;
+                        mMetaState |= META_CAPS_LOCK;
+                    }
+                    else
+                    {
+                        mMetaState |= META_SHIFT;
+                    }
+                    mShiftUsed = false;
+                    break;
+
+                case KeyEvent.KEYCODE_ALT_LEFT:
+                case KeyEvent.KEYCODE_ALT_RIGHT:
+                    // toggle ALT
+                    mMetaState ^= META_ALT;
+                    break;
+
+                case KeyEvent.KEYCODE_PERIOD:
+                    if (isSpecialOn())
+                    {
+                        sendKeyDown(keyCode);
+                    }
+                    break;
+
+                case KeyEvent.KEYCODE_DEL:
+                case KeyEvent.KEYCODE_FORWARD_DEL:
+                    if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
+                    {
+                        sendKeyDown(keyCode);
+                    }
+                    break;
+
+                case KeyEvent.KEYCODE_ENTER:
+                    if (isEditorActionRequested())
+                    {
+                        getCurrentInputConnection().performEditorAction(getEditorAction());
+                        return;
+                    }
+
+                    sendKeyDown(keyCode);
+                    break;
+
+                default:
+                    sendKeyDown(keyCode);
+                    break;
+            }
+
+            setState();
+        }
+
+        private void keyUp(int keyCode)
+        {
+            if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
+            {
+                return;
+            }
+
+            switch (keyCode)
+            {
+                case KeyEvent.KEYCODE_CTRL_LEFT:
+                case KeyEvent.KEYCODE_CTRL_RIGHT:
+                case KeyEvent.KEYCODE_SHIFT_LEFT:
+                case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                case KeyEvent.KEYCODE_ALT_LEFT:
+                case KeyEvent.KEYCODE_ALT_RIGHT:
+                    mSpecialOn = false;
+                    break;
+
+                case KeyEvent.KEYCODE_PERIOD:
+                    if (isSpecialOn())
+                    {
+                        sendKeyUp(keyCode);
+                        mMetaState &= META_CAPS_LOCK;
+                        mSpecialOn = false;
+                    }
+                    else
+                    {
+                        mSpecialOn = true;
+                    }
+                    break;
+
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                case KeyEvent.KEYCODE_DPAD_UP:
+                case KeyEvent.KEYCODE_DPAD_DOWN:
+                    sendKeyUp(keyCode);
+                    mMetaState &= ~(META_CTRL | META_ALT);
+                    mSpecialOn = false;
+                    if (isShiftOn())
+                    {
+                        mShiftUsed = true;
+                    }
+                    break;
+
+                case KeyEvent.KEYCODE_DEL:
+                case KeyEvent.KEYCODE_FORWARD_DEL:
+                    if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
+                    {
+                        sendKeyUp(keyCode);
+                    }
+                    mMetaState &= META_CAPS_LOCK;
+                    mSpecialOn = false;
+                    break;
+
+                case KeyEvent.KEYCODE_ENTER:
+                    if (isEditorActionRequested())
+                    {
+                        return;
+                    }
+
+                    sendKeyUp(keyCode);
+                    mMetaState &= META_CAPS_LOCK;
+                    mSpecialOn = false;
+                    break;
+
+                default:
+                    sendKeyUp(keyCode);
+                    mMetaState &= META_CAPS_LOCK;
+                    mSpecialOn = false;
+                    break;
+            }
+
+            setState();
+        }
+
+        private void keyRepeat(int keyCode)
+        {
+            if (keyCode == KeyEvent.KEYCODE_UNKNOWN || KeyEvent.isModifierKey(keyCode))
+            {
+                return;
+            }
+
+            sendKeyRepeat(keyCode, mMetaState);
+        }
+
+        private boolean isShiftKey(int keyCode)
+        {
+            return keyCode == KeyEvent.KEYCODE_SHIFT_LEFT || keyCode == KeyEvent.KEYCODE_SHIFT_RIGHT;
+        }
+
+        private void sendKeyDown(int keyCode)
+        {
+            if (isShiftOn() && !isShiftKey(keyCode))
+            {
+                sendEvent(toKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~META_SHIFT));
+            }
+
+            sendEvent(toKeyEvent(KeyEvent.ACTION_DOWN, keyCode, mMetaState));
+        }
+
+        private void sendKeyUp(int keyCode)
+        {
+            sendEvent(toKeyEvent(KeyEvent.ACTION_UP, keyCode, mMetaState));
+
+            if (mKeyboard.isShiftOn() && !isShiftKey(keyCode))
+            {
+                sendEvent(toKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~META_SHIFT));
+            }
+        }
+    }
+
     private static class PredictionResult
     {
-        public double score;
-        public String name;
-        public Prediction prediction;
+        public final double score;
+        public final String name;
 
         public PredictionResult()
         {
             this.score = 0;
+            this.name = null;
+        }
+
+        public PredictionResult(String name, double score)
+        {
+            this.name = name;
+            this.score = score;
         }
 
         public PredictionResult(Prediction prediction, double scale)
         {
-            this.prediction = prediction;
             this.name = prediction.name;
             this.score = prediction.score * scale;
         }
@@ -599,7 +646,7 @@ extends InputMethodService
             @Override
             public void run()
             {
-                keyRepeat(mKeyCode);
+                mKeyboard.keyRepeat(mKeyCode);
                 mHandler.postDelayed(mRunnable, KEYREPEAT_DELAY_MS);
             }
         };
@@ -621,7 +668,7 @@ extends InputMethodService
                         return false;
                     }
 
-                    keyDown(mKeyCode);
+                    mKeyboard.keyDown(mKeyCode);
                     mKeyDown = true;
                     mHandler.postDelayed(mRunnable, KEYREPEAT_DELAY_FIRST_MS);
                     return true;
@@ -634,7 +681,7 @@ extends InputMethodService
 
 
                     mHandler.removeCallbacks(mRunnable);
-                    keyUp(mKeyCode);
+                    mKeyboard.keyUp(mKeyCode);
                     mKeyDown = false;
                     return true;
             }
@@ -666,7 +713,7 @@ extends InputMethodService
                         return false;
                     }
 
-                    keyDown(mKeyCode);
+                    mKeyboard.keyDown(mKeyCode);
                     mKeyDown = true;
                     return true;
 
@@ -676,7 +723,7 @@ extends InputMethodService
                         return false;
                     }
 
-                    keyUp(mKeyCode);
+                    mKeyboard.keyUp(mKeyCode);
                     mKeyDown = false;
                     return true;
             }
@@ -699,7 +746,7 @@ extends InputMethodService
         @Override
         public boolean onDoubleTap(MotionEvent e)
         {
-            key(KeyEvent.KEYCODE_CAPS_LOCK);
+            mKeyboard.key(KeyEvent.KEYCODE_CAPS_LOCK);
             return false;
         }
 
@@ -716,7 +763,7 @@ extends InputMethodService
                         break;
                     }
 
-                    keyDown(mKeyCode);
+                    mKeyboard.keyDown(mKeyCode);
                     mKeyDown = true;
                     break;
 
@@ -726,7 +773,7 @@ extends InputMethodService
                         break;
                     }
 
-                    keyUp(mKeyCode);
+                    mKeyboard.keyUp(mKeyCode);
                     mKeyDown = false;
                     break;
             }
@@ -754,10 +801,12 @@ extends InputMethodService
         @Override
         public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
         {
+            setInfoView(mInfo);
+
             final Gesture gesture = overlay.getGesture();
             PredictionResult prediction = sPredictionFailed;
 
-            if (mSpecial)
+            if (mKeyboard.isSpecialOn())
             {
                 prediction = getPrediction(prediction, gesture, mStoreSpecial, 1.0);
             }
@@ -765,23 +814,6 @@ extends InputMethodService
             {
                 prediction = getPrediction(prediction, gesture, mStoreControl, 0.7);
                 prediction = getPrediction(prediction, gesture, mMainStore, 1.0);
-            }
-
-            if (Double.isNaN(prediction.score) || prediction.score == 0)
-            {
-                if (mSpecial)
-                {
-                    setInfo("");
-                    key(KeyEvent.KEYCODE_PERIOD);
-                    return;
-                }
-                else
-                {
-                    setInfo("special");
-                    mSpecial = true;
-                    setState();
-                    return;
-                }
             }
 
             if (prediction.score == 0)
@@ -792,65 +824,52 @@ extends InputMethodService
 
             String name = prediction.name;
             int keyCode = keyCodeFromTag(name);
-            setInfo("");
-
             if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
             {
-                getCurrentInputConnection().commitText(name, name.length());
-                mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
-                mSpecial = false;
-                setState();
+                mKeyboard.sendText(name);
                 return;
             }
 
-            key(keyCode);
+            mKeyboard.key(keyCode);
         }
 
         private PredictionResult getPrediction(PredictionResult previous, Gesture gesture, GestureLibrary store, double scale)
         {
             ArrayList<Prediction> predictions = store.recognize(gesture);
-            if (predictions.size() > 0)
+            if (predictions.size() == 0)
             {
-                // too short gesture is recognized as period
-                if (gesture.getLength() < mPeriodTolerance)
-                {
-                    scale = Double.NaN;
-                }
+                return previous;
+            }
 
-                PredictionResult current = new PredictionResult(predictions.get(0), scale);
-                if (previous.score > current.score)
+            if (gesture.getLength() < mPeriodTolerance)
+            {
+                return new PredictionResult("period", Double.NaN);
+            }
+
+            PredictionResult current = new PredictionResult(predictions.get(0), scale);
+            if (previous.score > current.score)
+            {
+                return previous;
+            }
+
+            if (mKeyboard.isCtrlOn())
+            {
+                if (current.score < 1.5)
                 {
                     return previous;
                 }
 
-                if (isCtrlOn(GestureInputMethod.this.mMetaState))
+                if (predictions.size() > 1)
                 {
-                    if (current.score < 1.5)
+                    PredictionResult next = new PredictionResult(predictions.get(1), scale);
+                    if (current.score < next.score + 0.2)
                     {
-                        return sPredictionFailed;
-                    }
-
-                    if (predictions.size() > 1)
-                    {
-                        PredictionResult next = new PredictionResult(predictions.get(1), scale);
-                        if (current.score < next.score + 0.2)
-                        {
-                            return sPredictionFailed;
-                        }
+                        return previous;
                     }
                 }
-
-                return current;
             }
-            else
-            {
-                return previous;
-            }
-        }
 
-        private void setInfo(String info)
-        {
-            GestureInputMethod.this.setInfo(mInfo, info);
+            return current;
         }
     }
 
@@ -874,7 +893,7 @@ extends InputMethodService
             {
                 if (!mLongPress)
                 {
-                    if (!mSpecial)
+                    if (!mKeyboard.isSpecialOn())
                     {
                         mLongPress = true;
                         onStartCursor(mLastEvent);
@@ -939,8 +958,8 @@ extends InputMethodService
 
         public void onStartCursor(MotionEvent e)
         {
-            mMetaState &= ~KeyEvent.META_CTRL_MASK;
-            mSpecial = false;
+            mKeyboard.mMetaState &= ~META_CTRL;
+            mKeyboard.mSpecialOn = false;
             setState();
 
             Toast.makeText(GestureInputMethod.this, "cursor mode", Toast.LENGTH_SHORT).show();
@@ -983,13 +1002,13 @@ extends InputMethodService
 
                 if (Math.abs(dx) >= mCursorTolerance)
                 {
-                    key(dx < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                    mKeyboard.key(dx < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
                     mCursorX += Math.copySign(mCursorTolerance, dx);
                 }
 
                 if (Math.abs(dy) >= mCursorTolerance)
                 {
-                    key(dy < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                    mKeyboard.key(dy < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
                     mCursorY += Math.copySign(mCursorTolerance, dy);
                 }
             }
@@ -1005,12 +1024,12 @@ extends InputMethodService
             mRepeating = false;
             if (!viewRect.contains(ex, viewRect.top))
             {
-                key(ex < viewRect.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                mKeyboard.key(ex < viewRect.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
                 mRepeating = true;
             }
             if (!viewRect.contains(viewRect.left, ey))
             {
-                key(ey < viewRect.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                mKeyboard.key(ey < viewRect.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
                 mRepeating = true;
             }
 
