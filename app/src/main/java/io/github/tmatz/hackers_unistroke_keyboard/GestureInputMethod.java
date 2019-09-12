@@ -33,6 +33,11 @@ extends InputMethodService
     private static final int VIBRATION_MS = 15;
     private static final int VIBRATION_STRONG_MS = 30;
 
+    private static final int META_CAPS_LOCK = KeyEvent.META_CAPS_LOCK_ON;
+    private static final int META_SHIFT = KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON;
+    private static final int META_CTRL = KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON;
+    private static final int META_ALT = KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON;
+
     private GestureLibrary mStoreAlpabet;
     private GestureLibrary mStoreNumber;
     private GestureLibrary mStoreSpecial;
@@ -249,7 +254,7 @@ extends InputMethodService
 
     private static boolean isCapsLockOn(int metaState)
     {
-        return (metaState & KeyEvent.META_CAPS_LOCK_ON) != 0;
+        return (metaState & META_CAPS_LOCK) != 0;
     }
 
     private boolean isCapsLockOn()
@@ -259,7 +264,7 @@ extends InputMethodService
 
     private static boolean isShiftOn(int metaState)
     {
-        return (metaState & KeyEvent.META_SHIFT_MASK) != 0;
+        return (metaState & META_SHIFT) != 0;
     }
 
     private boolean isShiftOn()
@@ -269,7 +274,7 @@ extends InputMethodService
 
     private static boolean isCtrlOn(int metaState)
     {
-        return (metaState & KeyEvent.META_CTRL_MASK) != 0;
+        return (metaState & META_CTRL) != 0;
     }
 
     private boolean isCtrlOn()
@@ -279,7 +284,7 @@ extends InputMethodService
 
     private static boolean isAltOn(int metaState)
     {
-        return (metaState & KeyEvent.META_ALT_MASK) != 0;
+        return (metaState & META_ALT) != 0;
     }
 
     private boolean isAltOn()
@@ -292,6 +297,14 @@ extends InputMethodService
         return mSpecial;
     }
 
+    private void sendText(String str)
+    {
+        getCurrentInputConnection().commitText(str, str.length());
+        mMetaState &= META_CAPS_LOCK;
+        mSpecial = false;
+        setState();
+    }
+    
     private void key(int keyCode)
     {
         keyDown(keyCode);
@@ -310,36 +323,39 @@ extends InputMethodService
             {
                 case KeyEvent.KEYCODE_CTRL_LEFT:
                 case KeyEvent.KEYCODE_CTRL_RIGHT:
+                    // clear used SHIFT
                     if (isShiftOn() && mShiftUsed)
                     {
-                        mMetaState &= ~KeyEvent.META_SHIFT_MASK;
+                        mMetaState &= ~META_SHIFT;
                         mShiftUsed = false;
                     }
-
-                    mMetaState ^= (KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON);
+                    // toggle CTRL
+                    mMetaState ^= META_CTRL;
                     break;
 
                 case KeyEvent.KEYCODE_SHIFT_LEFT:
                 case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                    // switch tri-state
                     if (isCapsLockOn())
                     {
-                        mMetaState &= ~KeyEvent.META_SHIFT_MASK;
-                        mMetaState &= ~KeyEvent.META_CAPS_LOCK_ON;
+                        mMetaState &= ~META_CAPS_LOCK;
                     }
                     else if (isShiftOn())
                     {
-                        mMetaState |= KeyEvent.META_CAPS_LOCK_ON;
+                        mMetaState &= ~META_SHIFT;
+                        mMetaState |= META_CAPS_LOCK;
                     }
                     else
                     {
-                        mMetaState |= (KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON);
+                        mMetaState |= META_SHIFT;
                     }
                     mShiftUsed = false;
                     break;
 
                 case KeyEvent.KEYCODE_ALT_LEFT:
                 case KeyEvent.KEYCODE_ALT_RIGHT:
-                    mMetaState ^= (KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON);
+                    // toggle ALT
+                    mMetaState ^= META_ALT;
                     break;
             }
         }
@@ -350,11 +366,6 @@ extends InputMethodService
                 case KeyEvent.KEYCODE_PERIOD:
                     if (isSpecialOn())
                     {
-                        if (isShiftOn(mMetaState))
-                        {
-                            sendKeyDown(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~KeyEvent.META_SHIFT_MASK);
-                        }
-
                         sendKeyDown(keyCode, mMetaState);
                     }
                     break;
@@ -374,20 +385,10 @@ extends InputMethodService
                         return;
                     }
 
-                    if (isShiftOn(mMetaState))
-                    {
-                        sendKeyDown(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~KeyEvent.META_SHIFT_MASK);
-                    }
-
                     sendKeyDown(keyCode, mMetaState);
                     break;
 
                 default:
-                    if (isShiftOn(mMetaState))
-                    {
-                        sendKeyDown(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~KeyEvent.META_SHIFT_MASK);
-                    }
-
                     sendKeyDown(keyCode, mMetaState);
                     break;
             }
@@ -418,21 +419,18 @@ extends InputMethodService
         }
         else
         {
-            final int lastMetaState = mMetaState;
             switch (keyCode)
             {
                 case KeyEvent.KEYCODE_PERIOD:
                     if (isSpecialOn())
                     {
                         sendKeyUp(keyCode, mMetaState);
-                        setInfo("");
-                        key(KeyEvent.KEYCODE_PERIOD);
+                        mMetaState &= META_CAPS_LOCK;
+                        mSpecial = false;
                     }
                     else
                     {
-                        setInfo("special");
                         mSpecial = true;
-                        setState();
                     }
                     break;
 
@@ -441,13 +439,12 @@ extends InputMethodService
                 case KeyEvent.KEYCODE_DPAD_UP:
                 case KeyEvent.KEYCODE_DPAD_DOWN:
                     sendKeyUp(keyCode, mMetaState);
-                    // clear CTRL, ALT
-                    mMetaState &= KeyEvent.META_SHIFT_MASK | KeyEvent.META_CAPS_LOCK_ON;
+                    mMetaState &= ~(META_CTRL | META_ALT);
+                    mSpecial = false;
                     if (isShiftOn())
                     {
                         mShiftUsed = true;
                     }
-                    mSpecial = false;
                     break;
 
                 case KeyEvent.KEYCODE_DEL:
@@ -456,8 +453,7 @@ extends InputMethodService
                     {
                         sendKeyUp(keyCode, mMetaState);
                     }
-                    // clear SHIFT, CTRL, ALT
-                    mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
+                    mMetaState &= META_CAPS_LOCK;
                     mSpecial = false;
                     break;
 
@@ -468,20 +464,15 @@ extends InputMethodService
                     }
 
                     sendKeyUp(keyCode, mMetaState);
-                    mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
+                    mMetaState &= META_CAPS_LOCK;
                     mSpecial = false;
                     break;
-                    
+
                 default:
                     sendKeyUp(keyCode, mMetaState);
-                    mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
+                    mMetaState &= META_CAPS_LOCK;
                     mSpecial = false;
                     break;
-            }
-
-            if (isShiftOn(lastMetaState))
-            {
-                sendKeyUp(KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~KeyEvent.META_SHIFT_MASK);
             }
         }
 
@@ -538,6 +529,15 @@ extends InputMethodService
         {
             mAlt.setBackgroundResource(R.drawable.button);
         }
+        
+        if (isSpecialOn())
+        {
+            setInfo("special");
+        }
+        else
+        {
+            setInfo("");
+        }
     }
 
     private void sendEvent(KeyEvent e)
@@ -545,24 +545,29 @@ extends InputMethodService
         getCurrentInputConnection().sendKeyEvent(e);
     }
 
-    private void sendKeyDown(int keyCode, int metaState)
-    {
-        if (isShiftOn() && !isShiftKey(keyCode))
-        {
-            
-        }
-        
-        sendEvent(toKeyEvent(KeyEvent.ACTION_DOWN, keyCode, metaState));
-    }
-    
     private static boolean isShiftKey(int keyCode)
     {
         return keyCode == KeyEvent.KEYCODE_SHIFT_LEFT || keyCode == KeyEvent.KEYCODE_SHIFT_RIGHT;
     }
 
+    private void sendKeyDown(int keyCode, int metaState)
+    {
+        if (isShiftOn(metaState) && !isShiftKey(keyCode))
+        {
+            sendEvent(toKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, metaState & ~META_SHIFT));
+        }
+
+        sendEvent(toKeyEvent(KeyEvent.ACTION_DOWN, keyCode, metaState));
+    }
+
     private void sendKeyUp(int keyCode, int metaState)
     {
         sendEvent(toKeyEvent(KeyEvent.ACTION_UP, keyCode, metaState));
+
+        if (isShiftOn(metaState) && !isShiftKey(keyCode))
+        {
+            sendEvent(toKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT, metaState & ~META_SHIFT));
+        }
     }
 
     private void sendKeyRepeat(int keyCode, int metaState)
@@ -604,7 +609,7 @@ extends InputMethodService
             vibrator.vibrate(VIBRATION_STRONG_MS);
         }
     }
-    
+
     private void setInfoView(TextView current)
     {
         mInfoCurrent = current;
@@ -617,7 +622,7 @@ extends InputMethodService
         mInfoNum.setText("");
         textView.setText(info);
     }
-    
+
     private void setInfo(String info)
     {
         mInfoAlphabet.setText("");
@@ -832,6 +837,8 @@ extends InputMethodService
         @Override
         public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
         {
+            setInfoView(mInfo);
+            
             final Gesture gesture = overlay.getGesture();
             PredictionResult prediction = sPredictionFailed;
 
@@ -851,33 +858,11 @@ extends InputMethodService
                 return;
             }
 
-            if (Double.isNaN(prediction.score))
-            {
-                if (isSpecialOn())
-                {
-                    setInfo("");
-                    key(KeyEvent.KEYCODE_PERIOD);
-                    return;
-                }
-                else
-                {
-                    setInfo("special");
-                    mSpecial = true;
-                    setState();
-                    return;
-                }
-            }
-
             String name = prediction.name;
             int keyCode = keyCodeFromTag(name);
-            setInfo("");
-
             if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
             {
-                getCurrentInputConnection().commitText(name, name.length());
-                mMetaState &= KeyEvent.META_CAPS_LOCK_ON;
-                mSpecial = false;
-                setState();
+                sendText(name);
                 return;
             }
 
