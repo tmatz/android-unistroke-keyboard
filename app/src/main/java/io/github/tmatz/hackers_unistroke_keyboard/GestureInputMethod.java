@@ -578,18 +578,15 @@ extends InputMethodService
     {
         public final double score;
         public final String name;
-        public final Prediction prediction;
 
         public PredictionResult()
         {
             this.score = 0;
             name = null;
-            prediction = null;
         }
 
         public PredictionResult(Prediction prediction, double scale)
         {
-            this.prediction = prediction;
             this.name = prediction.name;
             this.score = prediction.score * scale;
         }
