@@ -272,7 +272,7 @@ extends InputMethodService
     {
         return isAltOn(mMetaState);
     }
-    
+
     private boolean isSpecialOn()
     {
         return mSpecial;
@@ -582,7 +582,13 @@ extends InputMethodService
         public PredictionResult()
         {
             this.score = 0;
-            name = null;
+            this.name = null;
+        }
+
+        public PredictionResult(String name, double score)
+        {
+            this.name = name;
+            this.score = score;
         }
 
         public PredictionResult(Prediction prediction, double scale)
@@ -771,7 +777,7 @@ extends InputMethodService
                 prediction = getPrediction(prediction, gesture, mMainStore, 1.0);
             }
 
-            if (Double.isNaN(prediction.score) || prediction.score == 0)
+            if (Double.isNaN(prediction.score))
             {
                 if (isSpecialOn())
                 {
@@ -813,43 +819,40 @@ extends InputMethodService
         private PredictionResult getPrediction(PredictionResult previous, Gesture gesture, GestureLibrary store, double scale)
         {
             ArrayList<Prediction> predictions = store.recognize(gesture);
-            if (predictions.size() > 0)
+            if (predictions.size() == 0)
             {
-                // too short gesture is recognized as period
-                if (gesture.getLength() < mPeriodTolerance)
-                {
-                    scale = Double.NaN;
-                }
+                return previous;
+            }
 
-                PredictionResult current = new PredictionResult(predictions.get(0), scale);
-                if (previous.score > current.score)
+            if (gesture.getLength() < mPeriodTolerance)
+            {
+                return new PredictionResult("period", Double.NaN);
+            }
+
+            PredictionResult current = new PredictionResult(predictions.get(0), scale);
+            if (previous.score > current.score)
+            {
+                return previous;
+            }
+
+            if (isCtrlOn())
+            {
+                if (current.score < 1.5)
                 {
                     return previous;
                 }
 
-                if (isCtrlOn())
+                if (predictions.size() > 1)
                 {
-                    if (current.score < 1.5)
+                    PredictionResult next = new PredictionResult(predictions.get(1), scale);
+                    if (current.score < next.score + 0.2)
                     {
-                        return sPredictionFailed;
-                    }
-
-                    if (predictions.size() > 1)
-                    {
-                        PredictionResult next = new PredictionResult(predictions.get(1), scale);
-                        if (current.score < next.score + 0.2)
-                        {
-                            return sPredictionFailed;
-                        }
+                        return previous;
                     }
                 }
+            }
 
-                return current;
-            }
-            else
-            {
-                return previous;
-            }
+            return current;
         }
 
         private void setInfo(String info)
