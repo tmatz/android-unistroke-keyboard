@@ -876,15 +876,18 @@ extends InputMethodService
     private abstract class OnTouchCursorGestureListener
     implements OnTouchListener
     {
-        private static final int STATE_START = 0;
-        private static final int STATE_MOVE = 1;
-        private static final int STATE_REPEAT = 2;
-        private static final int STATE_BACK_TO_MOVE = 3;
-        private static final int STATE_FINISH = 4;
+        private enum State
+        {
+            START,
+            MOVE,
+            REPEAT,
+            BACK_TO_MOVE,
+            FINISH,
+        }
 
         private final float mCursorTolerance = getResources().getDimension(R.dimen.cursor_tolerance);
 
-        private int mCursorState;
+        private State mState;
         private float mCursorX;
         private float mCursorY;
         private float mMoveDistance;
@@ -895,17 +898,17 @@ extends InputMethodService
             @Override
             public void run()
             {
-                switch (mCursorState)
+                switch (mState)
                 {
-                    case STATE_START:
+                    case START:
                         onRunStart();
                         break;
 
-                    case STATE_REPEAT:
+                    case REPEAT:
                         onRunRepeat();
                         break;
 
-                    case STATE_BACK_TO_MOVE:
+                    case BACK_TO_MOVE:
                         onRunBackToMove();
                         break;
 
@@ -925,21 +928,21 @@ extends InputMethodService
                     break;
 
                 case MotionEvent.ACTION_MOVE:
-                    switch (mCursorState)
+                    switch (mState)
                     {
-                        case STATE_START:
+                        case START:
                             onTouchMoveStart(e);
                             break;
 
-                        case STATE_MOVE:
+                        case MOVE:
                             onTouchMoveMove(e);
                             break;
 
-                        case STATE_REPEAT:
+                        case REPEAT:
                             onTouchMoveRepeat(e);
                             break;
 
-                        case STATE_BACK_TO_MOVE:
+                        case BACK_TO_MOVE:
                             onTouchMoveBackToMove(e);
                             break;
 
@@ -966,7 +969,7 @@ extends InputMethodService
                 return;
             }
 
-            mCursorState = STATE_START;
+            mState = State.START;
             mLastEvent = e;
             mCursorX = e.getRawX();
             mCursorY = e.getRawY();
@@ -986,7 +989,7 @@ extends InputMethodService
 
             if (mMoveDistance > mCursorTolerance)
             {
-                mCursorState = STATE_FINISH;
+                mState = State.FINISH;
                 mHandler.removeCallbacks(mRunnable);
             }
         }
@@ -999,7 +1002,7 @@ extends InputMethodService
             Toast.makeText(GestureInputMethod.this, "cursor mode", Toast.LENGTH_SHORT).show();
             vibrate();
 
-            mCursorState = STATE_MOVE;
+            mState = State.MOVE;
         }
 
         protected void onTouchMoveMove(MotionEvent e)
@@ -1008,7 +1011,7 @@ extends InputMethodService
 
             if (!isInGestureArea(e))
             {
-                mCursorState = STATE_REPEAT;
+                mState = State.REPEAT;
                 mHandler.postDelayed(mRunnable, 100);
                 return;
             }
@@ -1035,7 +1038,7 @@ extends InputMethodService
 
             if (isInGestureArea(e))
             {
-                mCursorState = STATE_BACK_TO_MOVE;
+                mState = State.BACK_TO_MOVE;
                 mHandler.removeCallbacks(mRunnable);
                 mHandler.postDelayed(mRunnable, 200);
             }
@@ -1067,14 +1070,14 @@ extends InputMethodService
 
         protected void onRunBackToMove()
         {
-            mCursorState = STATE_MOVE;
+            mState = State.MOVE;
             mCursorX = mLastEvent.getRawX();
             mCursorY = mLastEvent.getRawY();
         }
 
         protected void onTouchUp(MotionEvent e)
         {
-            mCursorState = STATE_FINISH;
+            mState = State.FINISH;
             mHandler.removeCallbacks(mRunnable);
             mLastEvent = null;
         }
