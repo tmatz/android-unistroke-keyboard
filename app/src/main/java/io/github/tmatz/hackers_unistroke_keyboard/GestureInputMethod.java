@@ -91,12 +91,12 @@ extends InputMethodService
             new OnTouchCursorGestureListener()
             {
                 @Override
-                public void onStartCursor(MotionEvent event)
+                public void onRunStart()
                 {
                     overlay.clear(false);
                     overlayNum.clear(false);
 
-                    super.onStartCursor(event);
+                    super.onRunStart();
                 }
             });
 
@@ -104,12 +104,12 @@ extends InputMethodService
             new OnTouchCursorGestureListener()
             {
                 @Override
-                public void onStartCursor(MotionEvent event)
+                public void onRunStart()
                 {
                     overlay.clear(false);
                     overlayNum.clear(false);
 
-                    super.onStartCursor(event);
+                    super.onRunStart();
                 }
             });
 
@@ -898,15 +898,15 @@ extends InputMethodService
                 switch (mCursorState)
                 {
                     case STATE_START:
-                        onStartCursor(mLastEvent);
+                        onRunStart();
                         break;
 
                     case STATE_REPEAT:
-                        onRepeatCursor();
+                        onRunRepeat();
                         break;
 
                     case STATE_BACK_TO_MOVE:
-                        onBackToMoveCursor();
+                        onRunBackToMove();
                         break;
 
                     default:
@@ -921,25 +921,26 @@ extends InputMethodService
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
-                    if (!mKeyboard.isSpecialOn())
-                    {
-                        onPrepareCursor(e);
-                    }
+                    onTouchDown(e);
                     break;
 
                 case MotionEvent.ACTION_MOVE:
                     switch (mCursorState)
                     {
                         case STATE_START:
-                            onStartMoveCursor(e);
+                            onTouchMoveStart(e);
                             break;
 
                         case STATE_MOVE:
-                            onMoveCursor(e);
+                            onTouchMoveMove(e);
                             break;
 
                         case STATE_REPEAT:
-                            onRepeatMoveCursor(e);
+                            onTouchMoveRepeat(e);
+                            break;
+
+                        case STATE_BACK_TO_MOVE:
+                            onTouchMoveBackToMove(e);
                             break;
 
                         default:
@@ -948,7 +949,7 @@ extends InputMethodService
                     break;
 
                 case MotionEvent.ACTION_UP:
-                    onFinishCursor(e);
+                    onTouchUp(e);
                     break;
 
                 default:
@@ -958,8 +959,13 @@ extends InputMethodService
             return true;
         }
 
-        private void onPrepareCursor(MotionEvent e)
+        protected void onTouchDown(MotionEvent e)
         {
+            if (mKeyboard.isSpecialOn())
+            {
+                return;
+            }
+
             mCursorState = STATE_START;
             mLastEvent = e;
             mCursorX = e.getRawX();
@@ -968,12 +974,13 @@ extends InputMethodService
             mHandler.postDelayed(mRunnable, CURSOR_GESTURE_START_MS);
         }
 
-        private void onStartMoveCursor(MotionEvent e)
+        protected void onTouchMoveStart(MotionEvent e)
         {
             float dx = Math.abs(e.getRawX() - mCursorX);
             float dy = Math.abs(e.getRawY() - mCursorY);
 
             mMoveDistance += dx + dy;
+            mLastEvent = e;
             mCursorX = e.getRawX();
             mCursorY = e.getRawY();
 
@@ -984,32 +991,18 @@ extends InputMethodService
             }
         }
 
-        public void onStartCursor(MotionEvent e)
+        protected void onRunStart()
         {
             mKeyboard.mMetaState &= ~META_CTRL;
             setState();
 
             Toast.makeText(GestureInputMethod.this, "cursor mode", Toast.LENGTH_SHORT).show();
-
             vibrate();
 
             mCursorState = STATE_MOVE;
-            mCursorX = e.getRawX();
-            mCursorY = e.getRawY();
-            mLastEvent = e;
         }
 
-        private boolean isInGestureArea(MotionEvent e)
-        {
-            RectF viewRect = getViewRect(mGestureArea);
-
-            float ex = e.getRawX();
-            float ey = e.getRawY();
-
-            return viewRect.contains(ex, ey);
-        }
-
-        public void onMoveCursor(MotionEvent e)
+        protected void onTouchMoveMove(MotionEvent e)
         {
             mLastEvent = e;
 
@@ -1036,18 +1029,19 @@ extends InputMethodService
             }
         }
 
-        protected void onRepeatMoveCursor(MotionEvent e)
+        protected void onTouchMoveRepeat(MotionEvent e)
         {
             mLastEvent = e;
 
             if (isInGestureArea(e))
             {
                 mCursorState = STATE_BACK_TO_MOVE;
-                mHandler.postDelayed(mRunnable, 400);
+                mHandler.removeCallbacks(mRunnable);
+                mHandler.postDelayed(mRunnable, 200);
             }
         }
 
-        private void onRepeatCursor()
+        protected void onRunRepeat()
         {
             final RectF gestureArea = getViewRect(mGestureArea);
             final float ex = mLastEvent.getRawX();
@@ -1066,18 +1060,32 @@ extends InputMethodService
             mHandler.postDelayed(mRunnable, 100);
         }
 
-        public void onBackToMoveCursor()
+        protected void onTouchMoveBackToMove(MotionEvent e)
+        {
+            mLastEvent = e;
+        }
+
+        protected void onRunBackToMove()
         {
             mCursorState = STATE_MOVE;
             mCursorX = mLastEvent.getRawX();
             mCursorY = mLastEvent.getRawY();
         }
 
-        public void onFinishCursor(MotionEvent e)
+        protected void onTouchUp(MotionEvent e)
         {
             mCursorState = STATE_FINISH;
             mHandler.removeCallbacks(mRunnable);
             mLastEvent = null;
+        }
+
+        private boolean isInGestureArea(MotionEvent e)
+        {
+            RectF viewRect = getViewRect(mGestureArea);
+            float ex = e.getRawX();
+            float ey = e.getRawY();
+
+            return viewRect.contains(ex, ey);
         }
     }
 
