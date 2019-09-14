@@ -19,15 +19,10 @@ class PredictionResult
         this.score = score;
     }
 
-    public PredictionResult(Prediction prediction)
+    public PredictionResult(Prediction prediction, double scale)
     {
         this.name = prediction.name;
-        this.score = prediction.score;
-    }
-
-    public PredictionResult mult(double f)
-    {
-        return new PredictionResult(name, score * f);
+        this.score = prediction.score * scale;
     }
 
     public PredictionResult choose(PredictionResult other)

@@ -81,7 +81,7 @@ class GestureStore
             return new PredictionResult("period", Double.POSITIVE_INFINITY);
         }
 
-        PredictionResult prediction = new PredictionResult(predictions.get(0)).mult(scale);
+        PredictionResult prediction = new PredictionResult(predictions.get(0), scale);
 
         if ((flags & FLAG_STRICT) != 0)
         {
@@ -92,7 +92,7 @@ class GestureStore
 
             if (predictions.size() > 1)
             {
-                PredictionResult next = new PredictionResult(predictions.get(1)).mult(scale);
+                PredictionResult next = new PredictionResult(predictions.get(1), scale);
                 if (prediction.score < next.score + 0.2)
                 {
                     return sPredictionFailed;
