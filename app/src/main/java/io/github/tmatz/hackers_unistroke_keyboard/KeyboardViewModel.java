@@ -10,16 +10,16 @@ class KeyboardViewModel
     private static final int META_CTRL = KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON;
     private static final int META_ALT = KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON;
 
-    private final GestureInputMethod mGestureInputMethod;
+    private final IKeyboardService mService;
     private final HashMap<Integer, KeyHandler> mKeyHandlers = new HashMap<>();
     private final KeyHandler mDefaultKeyHandler;
     private int mMetaState;
     private boolean mSpecialOn;
     private boolean mShiftUsed;
 
-    public KeyboardViewModel(GestureInputMethod gestureInputMethod)
+    public KeyboardViewModel(IKeyboardService service)
     {
-        mGestureInputMethod = gestureInputMethod;
+        mService = service;
         mDefaultKeyHandler = new DefaultKeyHandler();
         add(new KeyHandler(), KeyEvent.KEYCODE_UNKNOWN);
         add(new CtrlKeyHandler(), KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.KEYCODE_CTRL_RIGHT);
@@ -75,7 +75,7 @@ class KeyboardViewModel
     {
         mMetaState &= META_CAPS_LOCK;
         mSpecialOn = false;
-        mGestureInputMethod.sendText(str);
+        mService.sendText(str);
     }
 
     public void key(int keyCode)
@@ -87,13 +87,13 @@ class KeyboardViewModel
     public void keyDown(int keyCode)
     {
         mKeyHandlers.getOrDefault(keyCode, mDefaultKeyHandler).down(keyCode);
-        mGestureInputMethod.updateView();
+        mService.updateView();
     }
 
     public void keyUp(int keyCode)
     {
         mKeyHandlers.getOrDefault(keyCode, mDefaultKeyHandler).up(keyCode);
-        mGestureInputMethod.updateView();
+        mService.updateView();
     }
 
     public void keyRepeat(int keyCode)
@@ -103,7 +103,7 @@ class KeyboardViewModel
             return;
         }
 
-        mGestureInputMethod.sendKeyRepeat(keyCode, mMetaState);
+        mService.sendKeyRepeat(keyCode, mMetaState);
     }
 
     private boolean isShiftKey(int keyCode)
@@ -115,19 +115,19 @@ class KeyboardViewModel
     {
         if (isShiftOn() && !isShiftKey(keyCode))
         {
-            mGestureInputMethod.sendKey(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~META_SHIFT);
+            mService.sendKey(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~META_SHIFT);
         }
 
-        mGestureInputMethod.sendKey(KeyEvent.ACTION_DOWN, keyCode, mMetaState);
+        mService.sendKey(KeyEvent.ACTION_DOWN, keyCode, mMetaState);
     }
 
     private void sendKeyUp(int keyCode)
     {
-        mGestureInputMethod.sendKey(KeyEvent.ACTION_UP, keyCode, mMetaState);
+        mService.sendKey(KeyEvent.ACTION_UP, keyCode, mMetaState);
 
         if (isShiftOn() && !isShiftKey(keyCode))
         {
-            mGestureInputMethod.sendKey(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~META_SHIFT);
+            mService.sendKey(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~META_SHIFT);
         }
     }
 
@@ -214,20 +214,20 @@ class KeyboardViewModel
         @Override
         public void down(int keyCode)
         {
-            if (!mGestureInputMethod.isEditorActionRequested())
+            if (!mService.isEditorActionRequested())
             {
                 mDefaultKeyHandler.down(keyCode);
             }
             else
             {
-                mGestureInputMethod.performEditorAction();
+                mService.performEditorAction();
             }
         }
 
         @Override
         public void up(int keyCode)
         {
-            if (!mGestureInputMethod.isEditorActionRequested())
+            if (!mService.isEditorActionRequested())
             {
                 mDefaultKeyHandler.up(keyCode);
             }
