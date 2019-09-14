@@ -1,7 +1,6 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.gesture.Gesture;
 import android.gesture.GestureLibraries;
 import android.gesture.GestureLibrary;
