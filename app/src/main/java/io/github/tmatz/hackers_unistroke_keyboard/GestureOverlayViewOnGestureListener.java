@@ -9,21 +9,25 @@ implements GestureOverlayView.OnGestureListener
     @Override
     public void onGesture(GestureOverlayView overlay, MotionEvent e)
     {
+        // nop
     }
 
     @Override
     public void onGestureCancelled(GestureOverlayView overlay, MotionEvent e)
     {
+        // nop
     }
 
     @Override
     public void onGestureStarted(GestureOverlayView overlay, MotionEvent e)
     {
+        // nop
     }
 
     @Override
     public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
     {
+        // nop
     }
 }
 
