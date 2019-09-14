@@ -176,7 +176,7 @@ extends InputMethodService
 
     private class ViewController
     {
-        private ViewGroup mGestureArea;
+        private ViewGroup mCenterPanel;
         private Button mButtonShift;
         private Button mButtonCtrl;
         private Button mButtonAlt;
@@ -186,13 +186,25 @@ extends InputMethodService
 
         public View onCreateInputView()
         {
-            final View view = getLayoutInflater().inflate(R.layout.input_method, null);
-            final View keyboardView = createKeyboardView();
+            final View mainView = getLayoutInflater().inflate(R.layout.input_method, null);
+            final View keyboardView = getLayoutInflater().inflate(R.layout.keyboard, null);
 
-            mGestureArea = view.findViewById(R.id.gesture_area);
-            final View unistrokeArea = view.findViewById(R.id.unistroke_area);
+            final ViewGroup centerPanel = mainView.findViewById(R.id.center_panel);
+            centerPanel.addView(keyboardView);
+
+            setupMainView(mainView);
+            setupKeyboardView(keyboardView);
+
+            return mainView;
+        }
+
+        private void setupMainView(View view)
+        {
+            mCenterPanel = view.findViewById(R.id.center_panel);
+            final View gestureArea = view.findViewById(R.id.gesture_area);
+            final View keyboardArea = view.findViewById(R.id.keyboard_area);
             final GestureOverlayView overlay = view.findViewById(R.id.gestures_overlay);
-            mInfo = view.findViewById(R.id.info);
+            mInfo = mInfoCurrent = view.findViewById(R.id.info);
             final GestureOverlayView overlayNum = view.findViewById(R.id.gestures_overlay_num);
             mInfoNum = view.findViewById(R.id.info_num);
             mButtonShift = view.findViewById(R.id.button_shift);
@@ -200,19 +212,33 @@ extends InputMethodService
             mButtonAlt = view.findViewById(R.id.button_alt);
             final Button extendKey = view.findViewById(R.id.button_key);
 
-            mInfoCurrent = mInfo;
-            mGestureArea.addView(keyboardView);
-            keyboardView.setVisibility(View.INVISIBLE);
-
             setupGestureOverlay(overlay, overlayNum);
             setupButtonKey(view, R.id.button_shift);
             setupButtonKey(view, R.id.button_ctrl);
             setupButtonKey(view, R.id.button_alt);
             setupButtonKey(view, R.id.button_del);
             setupButtonKey(view, R.id.button_enter);
-            setupExtendKey(extendKey, unistrokeArea, keyboardView);
+            setupExtendKey(extendKey, gestureArea, keyboardArea);
+        }
 
-            return view;
+        private void setupKeyboardView(final View view)
+        {
+            view.setVisibility(View.INVISIBLE);
+            setupButtonKey(view, R.id.keyboard_button_h);
+            setupButtonKey(view, R.id.keyboard_button_j);
+            setupButtonKey(view, R.id.keyboard_button_k);
+            setupButtonKey(view, R.id.keyboard_button_l);
+            setupButtonKey(view, R.id.keyboard_button_z);
+            setupButtonKey(view, R.id.keyboard_button_x);
+            setupButtonKey(view, R.id.keyboard_button_c);
+            setupButtonKey(view, R.id.keyboard_button_v);
+            setupButtonKey(view, R.id.keyboard_button_home);
+            setupButtonKey(view, R.id.keyboard_button_move_end);
+            setupButtonKey(view, R.id.keyboard_button_dpad_left);
+            setupButtonKey(view, R.id.keyboard_button_dpad_right);
+            setupButtonKey(view, R.id.keyboard_button_dpad_up);
+            setupButtonKey(view, R.id.keyboard_button_dpad_down);
+            setupButtonKey(view, R.id.keyboard_button_forward_del);
         }
 
         private void setupGestureOverlay(final GestureOverlayView overlay, final GestureOverlayView overlayNum)
@@ -280,29 +306,6 @@ extends InputMethodService
                         }
                     }
                 });
-        }
-
-        private View createKeyboardView()
-        {
-            final View view = getLayoutInflater().inflate(R.layout.keyboard, null);
-
-            setupButtonKey(view, R.id.keyboard_button_h);
-            setupButtonKey(view, R.id.keyboard_button_j);
-            setupButtonKey(view, R.id.keyboard_button_k);
-            setupButtonKey(view, R.id.keyboard_button_l);
-            setupButtonKey(view, R.id.keyboard_button_z);
-            setupButtonKey(view, R.id.keyboard_button_x);
-            setupButtonKey(view, R.id.keyboard_button_c);
-            setupButtonKey(view, R.id.keyboard_button_v);
-            setupButtonKey(view, R.id.keyboard_button_home);
-            setupButtonKey(view, R.id.keyboard_button_move_end);
-            setupButtonKey(view, R.id.keyboard_button_dpad_left);
-            setupButtonKey(view, R.id.keyboard_button_dpad_right);
-            setupButtonKey(view, R.id.keyboard_button_dpad_up);
-            setupButtonKey(view, R.id.keyboard_button_dpad_down);
-            setupButtonKey(view, R.id.keyboard_button_forward_del);
-
-            return view;
         }
 
         private void setupButtonKey(View rootView, int id)
@@ -391,9 +394,9 @@ extends InputMethodService
             return new RectF(x, y, x + w, y + h);
         }
 
-        public RectF getGestureAreaRect()
+        public RectF getCenterRect()
         {
-            return getViewRect(mGestureArea);
+            return getViewRect(mCenterPanel);
         }
     }
 
@@ -1137,18 +1140,18 @@ extends InputMethodService
 
         protected void onRunRepeat()
         {
-            final RectF gestureArea = mViewController.getGestureAreaRect();
+            final RectF centerArea = mViewController.getCenterRect();
             final float ex = mLastEvent.getRawX();
             final float ey = mLastEvent.getRawY();
 
-            if (!gestureArea.contains(ex, gestureArea.top))
+            if (!centerArea.contains(ex, centerArea.top))
             {
-                mKeyboardController.key(ex < gestureArea.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                mKeyboardController.key(ex < centerArea.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
             }
 
-            if (!gestureArea.contains(gestureArea.left, ey))
+            if (!centerArea.contains(centerArea.left, ey))
             {
-                mKeyboardController.key(ey < gestureArea.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                mKeyboardController.key(ey < centerArea.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
             }
 
             mHandler.postDelayed(mRunnable, 100);
@@ -1175,11 +1178,7 @@ extends InputMethodService
 
         private boolean isInGestureArea(MotionEvent e)
         {
-            RectF viewRect = mViewController.getGestureAreaRect();
-            float ex = e.getRawX();
-            float ey = e.getRawY();
-
-            return viewRect.contains(ex, ey);
+            return mViewController.getCenterRect().contains(e.getRawX(), e.getRawY());
         }
     }
 
