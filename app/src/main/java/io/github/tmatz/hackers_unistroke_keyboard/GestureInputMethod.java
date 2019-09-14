@@ -39,7 +39,7 @@ extends InputMethodService
     private static final int META_CTRL = KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON;
     private static final int META_ALT = KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON;
 
-    private final GestureStore mGestureStore = new GestureStore();
+    private GestureStore mGestureStore;
     private final ViewController mViewController = new ViewController();
     private final KeyboardController mKeyboardController = new KeyboardController();
     private final Handler mHandler = new Handler();
@@ -48,7 +48,7 @@ extends InputMethodService
     public void onCreate()
     {
         super.onCreate();
-        mGestureStore.onCreate();
+        mGestureStore = new GestureStore(getApplicationContext());
     }
 
     @Override
@@ -157,31 +157,6 @@ extends InputMethodService
         return true;
     }
 
-    private class GestureStore
-    {
-        private GestureLibrary mStoreAlpabet;
-        private GestureLibrary mStoreNumber;
-        private GestureLibrary mStoreSpecial;
-        private GestureLibrary mStoreControl;
-
-        public void onCreate()
-        {
-            mStoreAlpabet = createGesture(R.raw.gestures_alphabet);
-            mStoreNumber = createGesture(R.raw.gestures_number);
-            mStoreSpecial = createGesture(R.raw.gestures_special);
-            mStoreControl = createGesture(R.raw.gestures_control);
-        }
-
-        private GestureLibrary createGesture(int rawId)
-        {
-            GestureLibrary store = GestureLibraries.fromRawResource(getApplicationContext(), rawId);
-            store.setOrientationStyle(8);
-
-            store.load();
-            return store;
-        }
-    }
-
     private class ViewController
     {
         private ViewGroup mCenterPanel;
@@ -250,7 +225,7 @@ extends InputMethodService
             final GestureOverlayView overlayNum = view.findViewById(R.id.gestures_overlay_num);
 
             overlay.addOnGestureListener(
-                new OnGestureUnistrokeListener(mGestureStore.mStoreAlpabet)
+                new OnGestureUnistrokeListener(mGestureStore.alpabet)
                 {
                     @Override
                     public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
@@ -261,7 +236,7 @@ extends InputMethodService
                 });
 
             overlayNum.addOnGestureListener(
-                new OnGestureUnistrokeListener(mGestureStore.mStoreNumber)
+                new OnGestureUnistrokeListener(mGestureStore.number)
                 {
                     @Override
                     public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
@@ -941,11 +916,11 @@ extends InputMethodService
 
             if (mKeyboardController.isSpecialOn())
             {
-                prediction = getPrediction(prediction, gesture, mGestureStore.mStoreSpecial, 1.0);
+                prediction = getPrediction(prediction, gesture, mGestureStore.special, 1.0);
             }
             else
             {
-                prediction = getPrediction(prediction, gesture, mGestureStore.mStoreControl, 0.7);
+                prediction = getPrediction(prediction, gesture, mGestureStore.control, 0.7);
                 prediction = getPrediction(prediction, gesture, mMainStore, 1.0);
             }
 
