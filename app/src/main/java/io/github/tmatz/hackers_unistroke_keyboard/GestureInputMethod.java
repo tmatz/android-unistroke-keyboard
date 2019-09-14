@@ -61,7 +61,6 @@ extends InputMethodService
     public View onCreateInputView()
     {
         View view = mViewController.onCreateInputView();
-        mKeyboardController.setState();
         return view;
     }
 
@@ -189,9 +188,7 @@ extends InputMethodService
         private Button mButtonShift;
         private Button mButtonCtrl;
         private Button mButtonAlt;
-        private TextView mInfo;
-        private TextView mInfoNum;
-        private TextView mInfoCurrent;
+        private final InfoView mInfoView = new InfoView();
 
         public View onCreateInputView()
         {
@@ -206,6 +203,9 @@ extends InputMethodService
             setupMainView(mainView);
             setupKeyboardView(keyboardView);
             setupExtendKey(extendKey, gestureArea, keyboardArea);
+            mInfoView.setup(mainView);
+
+            update();
 
             return mainView;
         }
@@ -213,8 +213,6 @@ extends InputMethodService
         private void setupMainView(View view)
         {
             mCenterPanel = view.findViewById(R.id.center_panel);
-            mInfo = view.findViewById(R.id.info);
-            mInfoNum = view.findViewById(R.id.info_num);
             mButtonShift = view.findViewById(R.id.button_shift);
             mButtonCtrl = view.findViewById(R.id.button_ctrl);
             mButtonAlt = view.findViewById(R.id.button_alt);
@@ -225,7 +223,6 @@ extends InputMethodService
             setupButtonKey(view, R.id.button_alt);
             setupButtonKey(view, R.id.button_del);
             setupButtonKey(view, R.id.button_enter);
-            mInfoCurrent = mInfo;
         }
 
         private void setupKeyboardView(final View view)
@@ -347,49 +344,30 @@ extends InputMethodService
             }
         }
 
-        public void setShiftOn(boolean on)
+        public void update()
         {
-            mButtonShift.setBackgroundResource(on ? R.drawable.button_active : R.drawable.button);
-        }
+            if (mKeyboardController.isCapsLockOn())
+            {
+                mButtonShift.setBackgroundResource(R.drawable.button_locked);
+            }
+            else
+            {
+                mButtonShift.setBackgroundResource(mKeyboardController.isShiftOn() ? R.drawable.button_active : R.drawable.button);
+            }
 
-        public void setCapsOn(boolean on)
-        {
-            mButtonShift.setBackgroundResource(on ? R.drawable.button_locked : R.drawable.button);
-        }
-
-        public void setCtrlOn(boolean on)
-        {
-            mButtonCtrl.setBackgroundResource(on ? R.drawable.button_active : R.drawable.button);
-        }
-
-        public void setAltOn(boolean on)
-        {
-            mButtonAlt.setBackgroundResource(on ? R.drawable.button_active : R.drawable.button);
-        }
-
-        public void setSpecialOn(boolean on)
-        {
-            mInfoCurrent.setText(on ? "special" : "");
+            mButtonCtrl.setBackgroundResource(mKeyboardController.isCtrlOn() ? R.drawable.button_active : R.drawable.button);
+            mButtonAlt.setBackgroundResource(mKeyboardController.isAltOn() ? R.drawable.button_active : R.drawable.button);
+            mInfoView.setText(mKeyboardController.isSpecialOn() ? "special" : "");
         }
 
         public void setAlphabetActive()
         {
-            setActiveInfo(mInfo);
+            mInfoView.setAlphabetActive();
         }
 
         public void setNumberActive()
         {
-            setActiveInfo(mInfoNum);
-        }
-
-        private void setActiveInfo(TextView info)
-        {
-            if (!mInfoCurrent.equals(info))
-            {
-                info.setText(mInfoCurrent.getText());
-                mInfoCurrent.setText("");
-                mInfoCurrent = info;
-            }
+            mInfoView.setNumberActive();
         }
 
         public RectF getViewRect(View view)
@@ -408,6 +386,45 @@ extends InputMethodService
         public RectF getCenterRect()
         {
             return getViewRect(mCenterPanel);
+        }
+
+        private class InfoView
+        {
+            private TextView mInfo;
+            private TextView mInfoNum;
+            private TextView mInfoCurrent;
+
+            public void setup(View view)
+            {
+                mInfo = view.findViewById(R.id.info);
+                mInfoNum = view.findViewById(R.id.info_num);
+                mInfoCurrent = mInfo;
+            }
+
+            public void setText(String text)
+            {
+                mInfoView.mInfoCurrent.setText(text);
+            }
+
+            public void setAlphabetActive()
+            {
+                setActiveInfo(mInfo);
+            }
+
+            public void setNumberActive()
+            {
+                setActiveInfo(mInfoNum);
+            }
+
+            private void setActiveInfo(TextView info)
+            {
+                if (!mInfoView.mInfoCurrent.equals(info))
+                {
+                    info.setText(mInfoView.mInfoCurrent.getText());
+                    mInfoView.mInfoCurrent.setText("");
+                    mInfoView.mInfoCurrent = info;
+                }
+            }
         }
     }
 
@@ -477,7 +494,7 @@ extends InputMethodService
             getCurrentInputConnection().commitText(str, str.length());
             mMetaState &= META_CAPS_LOCK;
             mSpecialOn = false;
-            setState();
+            mViewController.update();
         }
 
         private void key(int keyCode)
@@ -489,13 +506,13 @@ extends InputMethodService
         private void keyDown(int keyCode)
         {
             mKeyHandlers.getOrDefault(keyCode, mDefaultKeyHandler).down(keyCode);
-            setState();
+            mViewController.update();
         }
 
         private void keyUp(int keyCode)
         {
             mKeyHandlers.getOrDefault(keyCode, mDefaultKeyHandler).up(keyCode);
-            setState();
+            mViewController.update();
         }
 
         public void keyRepeat(int keyCode)
@@ -531,22 +548,6 @@ extends InputMethodService
             {
                 sendEvent(toKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~META_SHIFT));
             }
-        }
-
-        private void setState()
-        {
-            if (isCapsLockOn())
-            {
-                mViewController.setCapsOn(true);
-            }
-            else
-            {
-                mViewController.setShiftOn(isShiftOn());
-            }
-
-            mViewController.setCtrlOn(isCtrlOn());
-            mViewController.setAltOn(isAltOn());
-            mViewController.setSpecialOn(isSpecialOn());
         }
 
         private class KeyHandler
@@ -1121,7 +1122,7 @@ extends InputMethodService
         protected void onRunStart()
         {
             mKeyboardController.mMetaState &= ~META_CTRL;
-            mKeyboardController.setState();
+            mViewController.update();
 
             if (!vibrate())
             {
