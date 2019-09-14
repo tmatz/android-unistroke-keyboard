@@ -448,6 +448,11 @@ extends InputMethodService
             return mSpecialOn;
         }
 
+        private boolean isShiftUsed()
+        {
+            return mShiftUsed;
+        }
+
         private void sendText(String str)
         {
             getCurrentInputConnection().commitText(str, str.length());
@@ -464,73 +469,37 @@ extends InputMethodService
 
         private void keyDown(int keyCode)
         {
-            if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
-            {
-                return;
-            }
-
             switch (keyCode)
             {
+                case KeyEvent.KEYCODE_UNKNOWN:
+                    break;
+
                 case KeyEvent.KEYCODE_CTRL_LEFT:
                 case KeyEvent.KEYCODE_CTRL_RIGHT:
-                    // clear used SHIFT
-                    if (isShiftOn() && mShiftUsed)
-                    {
-                        mMetaState &= ~META_SHIFT;
-                        mShiftUsed = false;
-                    }
-                    // toggle CTRL
-                    mMetaState ^= META_CTRL;
+                    onCtrlDown();
                     break;
 
                 case KeyEvent.KEYCODE_SHIFT_LEFT:
                 case KeyEvent.KEYCODE_SHIFT_RIGHT:
-                    // switch tri-state
-                    if (isCapsLockOn())
-                    {
-                        mMetaState &= ~META_CAPS_LOCK;
-                    }
-                    else if (isShiftOn())
-                    {
-                        mMetaState &= ~META_SHIFT;
-                        mMetaState |= META_CAPS_LOCK;
-                    }
-                    else
-                    {
-                        mMetaState |= META_SHIFT;
-                    }
-                    mShiftUsed = false;
+                    onShiftDown();
                     break;
 
                 case KeyEvent.KEYCODE_ALT_LEFT:
                 case KeyEvent.KEYCODE_ALT_RIGHT:
-                    // toggle ALT
-                    mMetaState ^= META_ALT;
+                    onAltDown();
                     break;
 
                 case KeyEvent.KEYCODE_PERIOD:
-                    if (isSpecialOn())
-                    {
-                        sendKeyDown(keyCode);
-                    }
+                    onPeriodDown();
                     break;
 
                 case KeyEvent.KEYCODE_DEL:
                 case KeyEvent.KEYCODE_FORWARD_DEL:
-                    if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
-                    {
-                        sendKeyDown(keyCode);
-                    }
+                    onDelDown(keyCode);
                     break;
 
                 case KeyEvent.KEYCODE_ENTER:
-                    if (isEditorActionRequested())
-                    {
-                        getCurrentInputConnection().performEditorAction(getEditorAction());
-                        return;
-                    }
-
-                    sendKeyDown(keyCode);
+                    onEnterDown();
                     break;
 
                 default:
@@ -543,13 +512,11 @@ extends InputMethodService
 
         private void keyUp(int keyCode)
         {
-            if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
-            {
-                return;
-            }
-
             switch (keyCode)
             {
+                case KeyEvent.KEYCODE_UNKNOWN:
+                    break;
+
                 case KeyEvent.KEYCODE_CTRL_LEFT:
                 case KeyEvent.KEYCODE_CTRL_RIGHT:
                 case KeyEvent.KEYCODE_SHIFT_LEFT:
@@ -560,50 +527,23 @@ extends InputMethodService
                     break;
 
                 case KeyEvent.KEYCODE_PERIOD:
-                    if (isSpecialOn())
-                    {
-                        sendKeyUp(keyCode);
-                        mMetaState &= META_CAPS_LOCK;
-                        mSpecialOn = false;
-                    }
-                    else
-                    {
-                        mSpecialOn = true;
-                    }
+                    onPeriodUp();
                     break;
 
                 case KeyEvent.KEYCODE_DPAD_LEFT:
                 case KeyEvent.KEYCODE_DPAD_RIGHT:
                 case KeyEvent.KEYCODE_DPAD_UP:
                 case KeyEvent.KEYCODE_DPAD_DOWN:
-                    sendKeyUp(keyCode);
-                    mMetaState &= ~(META_CTRL | META_ALT);
-                    mSpecialOn = false;
-                    if (isShiftOn())
-                    {
-                        mShiftUsed = true;
-                    }
+                    onDPadUp(keyCode);
                     break;
 
                 case KeyEvent.KEYCODE_DEL:
                 case KeyEvent.KEYCODE_FORWARD_DEL:
-                    if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
-                    {
-                        sendKeyUp(keyCode);
-                    }
-                    mMetaState &= META_CAPS_LOCK;
-                    mSpecialOn = false;
+                    onDelUp(keyCode);
                     break;
 
                 case KeyEvent.KEYCODE_ENTER:
-                    if (isEditorActionRequested())
-                    {
-                        return;
-                    }
-
-                    sendKeyUp(keyCode);
-                    mMetaState &= META_CAPS_LOCK;
-                    mSpecialOn = false;
+                    onEnterUp();
                     break;
 
                 default:
@@ -614,6 +554,116 @@ extends InputMethodService
             }
 
             setState();
+        }
+
+        private void onCtrlDown()
+        {
+            mMetaState ^= META_CTRL;
+
+            // clear used SHIFT
+            if (isShiftOn() && isShiftUsed())
+            {
+                mMetaState &= ~META_SHIFT;
+                mShiftUsed = false;
+            }
+        }
+
+        private void onShiftDown()
+        {
+            mShiftUsed = false;
+            if (isCapsLockOn())
+            {
+                mMetaState &= ~META_CAPS_LOCK;
+            }
+            else if (isShiftOn())
+            {
+                mMetaState &= ~META_SHIFT;
+                mMetaState |= META_CAPS_LOCK;
+            }
+            else
+            {
+                mMetaState |= META_SHIFT;
+            }
+        }
+
+        private void onAltDown()
+        {
+            mMetaState ^= META_ALT;
+        }
+
+        private void onPeriodDown()
+        {
+            if (isSpecialOn())
+            {
+                sendKeyDown(KeyEvent.KEYCODE_PERIOD);
+            }
+        }
+
+        private void onPeriodUp()
+        {
+            if (isSpecialOn())
+            {
+                sendKeyUp(KeyEvent.KEYCODE_PERIOD);
+                mMetaState &= META_CAPS_LOCK;
+                mSpecialOn = false;
+            }
+            else
+            {
+                mSpecialOn = true;
+            }
+        }
+
+        private void onDelDown(int keyCode)
+        {
+            if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
+            {
+                sendKeyDown(keyCode);
+            }
+        }
+
+        private void onDelUp(int keyCode)
+        {
+            if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
+            {
+                sendKeyUp(keyCode);
+            }
+
+            mMetaState &= META_CAPS_LOCK;
+            mSpecialOn = false;
+        }
+
+        private void onEnterDown()
+        {
+            if (isEditorActionRequested())
+            {
+                getCurrentInputConnection().performEditorAction(getEditorAction());
+                return;
+            }
+
+            sendKeyDown(KeyEvent.KEYCODE_ENTER);
+        }
+
+        private void onEnterUp()
+        {
+            if (isEditorActionRequested())
+            {
+                return;
+            }
+
+            sendKeyUp(KeyEvent.KEYCODE_ENTER);
+            mMetaState &= META_CAPS_LOCK;
+            mSpecialOn = false;
+        }
+
+        private void onDPadUp(int keyCode)
+        {
+            sendKeyUp(keyCode);
+            mMetaState &= ~(META_CTRL | META_ALT);
+            mSpecialOn = false;
+            if (isShiftOn())
+            {
+                mShiftUsed = true;
+            }
         }
 
         private void keyRepeat(int keyCode)
