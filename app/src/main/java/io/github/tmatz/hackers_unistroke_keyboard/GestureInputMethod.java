@@ -136,25 +136,14 @@ implements IKeyboardService
         return KeyEvent.keyCodeFromString("KEYCODE_" + tag.toUpperCase());
     }
 
-    private boolean vibrate()
+    private boolean vibrate(boolean strong)
     {
         Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
         if (vibrator == null || !vibrator.hasVibrator())
         {
             return false;
         }
-        vibrator.vibrate(VIBRATION_MS);
-        return true;
-    }
-
-    private boolean vibrateStrong()
-    {
-        Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
-        if (vibrator == null || !vibrator.hasVibrator())
-        {
-            return false;
-        }
-        vibrator.vibrate(VIBRATION_STRONG_MS);
+        vibrator.vibrate(strong ? VIBRATION_STRONG_MS : VIBRATION_MS);
         return true;
     }
 
@@ -564,7 +553,7 @@ implements IKeyboardService
                 PredictionResult prediction = mGestureStore.predict(gesture, makeFlags());
                 if (prediction.score == 0)
                 {
-                    vibrateStrong();
+                    vibrate(true);
                     return;
                 }
 
@@ -719,7 +708,7 @@ implements IKeyboardService
             {
                 mViewController.update();
 
-                if (!vibrate())
+                if (!vibrate(false))
                 {
                     Toast.makeText(GestureInputMethod.this, "cursor mode", Toast.LENGTH_SHORT).show();
                 }
