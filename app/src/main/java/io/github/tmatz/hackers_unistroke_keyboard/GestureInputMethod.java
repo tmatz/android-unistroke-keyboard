@@ -714,7 +714,14 @@ extends InputMethodService
             public void up(int keyCode)
             {
                 sendKeyUp(keyCode);
-                mMetaState &= (META_SHIFT | META_CAPS_LOCK);
+                if (isCtrlOn() || isAltOn())
+                {
+                    mMetaState &= ~(META_SHIFT | META_CTRL | META_ALT);
+                }
+                else
+                {
+                    mMetaState &= ~(META_CTRL | META_ALT);
+                }
                 mSpecialOn = false;
                 if (isShiftOn())
                 {
@@ -789,7 +796,7 @@ extends InputMethodService
         @Override
         public boolean onTouch(View v, MotionEvent e)
         {
-            final RectF rect = mViewController.getViewRect(v);
+            RectF rect = mViewController.getViewRect(v);
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
@@ -833,7 +840,7 @@ extends InputMethodService
         @Override
         public boolean onTouch(View v, MotionEvent e)
         {
-            final RectF rect = mViewController.getViewRect(v);
+            RectF rect = mViewController.getViewRect(v);
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
@@ -884,7 +891,7 @@ extends InputMethodService
         public boolean onTouch(View v, MotionEvent e)
         {
 
-            final RectF rect = mViewController.getViewRect(v);
+            RectF rect = mViewController.getViewRect(v);
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
@@ -916,9 +923,9 @@ extends InputMethodService
     private class OnGestureUnistrokeListener
     extends GestureOverlayViewOnGestureListener
     {
-        private final float mPeriodTolerance = getResources().getDimension(R.dimen.period_tolerance);
         private static final PredictionResult sPredictionFailed = new PredictionResult();
 
+        private final float mPeriodTolerance = getResources().getDimension(R.dimen.period_tolerance);
         private final GestureLibrary mMainStore;
 
         public OnGestureUnistrokeListener(GestureLibrary mainStore)
@@ -929,7 +936,7 @@ extends InputMethodService
         @Override
         public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
         {
-            final Gesture gesture = overlay.getGesture();
+            Gesture gesture = overlay.getGesture();
             PredictionResult prediction = sPredictionFailed;
 
             if (mKeyboardController.isSpecialOn())
@@ -1004,18 +1011,17 @@ extends InputMethodService
     {
         private enum State
         {
+            SLEEP,
             START,
             MOVE,
             REPEAT,
             BACK_TO_MOVE,
-            FINISH,
         }
 
         private final float mCursorTolerance = getResources().getDimension(R.dimen.cursor_tolerance);
 
-        private State mState;
-        private float mCursorX;
-        private float mCursorY;
+        private State mState = State.SLEEP;
+        private VectorF mBasePos = new VectorF();
         private float mMoveDistance;
         private MotionEvent mLastEvent;
 
@@ -1097,32 +1103,27 @@ extends InputMethodService
 
             mState = State.START;
             mLastEvent = e;
-            mCursorX = e.getRawX();
-            mCursorY = e.getRawY();
+            mBasePos = VectorF.fromEvent(e);
             mMoveDistance = 0;
             mHandler.postDelayed(mRunnable, CURSOR_GESTURE_START_MS);
         }
 
         protected void onTouchMoveStart(MotionEvent e)
         {
-            float dx = Math.abs(e.getRawX() - mCursorX);
-            float dy = Math.abs(e.getRawY() - mCursorY);
-
-            mMoveDistance += dx + dy;
             mLastEvent = e;
-            mCursorX = e.getRawX();
-            mCursorY = e.getRawY();
+            VectorF pos = VectorF.fromEvent(e);
+            float length = pos.sub(mBasePos).fastLength();
+            mBasePos = pos;
+            mMoveDistance += length;
 
             if (mMoveDistance > mCursorTolerance)
             {
-                mState = State.FINISH;
-                mHandler.removeCallbacks(mRunnable);
+                gotoSleep();
             }
         }
 
         protected void onRunStart()
         {
-            mKeyboardController.mMetaState &= ~META_CTRL;
             mViewController.update();
 
             if (!vibrate())
@@ -1137,26 +1138,35 @@ extends InputMethodService
         {
             mLastEvent = e;
 
-            if (!isInGestureArea(e))
+            if (!isInGestureArea(e) && !mKeyboardController.isCtrlOn() && !mKeyboardController.isAltOn())
             {
                 mState = State.REPEAT;
                 mHandler.postDelayed(mRunnable, 100);
                 return;
             }
 
-            final float dx = mLastEvent.getRawX() - mCursorX;
-            final float dy = mLastEvent.getRawY() - mCursorY;
+            boolean isModifierOn = mKeyboardController.isCtrlOn() || mKeyboardController.isAltOn();
 
-            if (Math.abs(dx) >= mCursorTolerance)
+            VectorF delta = VectorF.fromEvent(e).sub(mBasePos).cutoff(mCursorTolerance);
+
+            if (delta.x != 0)
             {
-                mKeyboardController.key(dx < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
-                mCursorX += Math.copySign(mCursorTolerance, dx);
+                mKeyboardController.key(delta.x < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                mBasePos.x += Math.copySign(mCursorTolerance, delta.x);
+            }
+            else if (delta.y != 0)
+            {
+                mKeyboardController.key(delta.y < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                mBasePos.y += Math.copySign(mCursorTolerance, delta.y);
+            }
+            else
+            {
+                return;
             }
 
-            if (Math.abs(dy) >= mCursorTolerance)
+            if (isModifierOn)
             {
-                mKeyboardController.key(dy < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-                mCursorY += Math.copySign(mCursorTolerance, dy);
+                gotoSleep();
             }
         }
 
@@ -1174,18 +1184,21 @@ extends InputMethodService
 
         protected void onRunRepeat()
         {
-            final RectF centerArea = mViewController.getCenterRect();
-            final float ex = mLastEvent.getRawX();
-            final float ey = mLastEvent.getRawY();
+            RectF centerRect = mViewController.getCenterRect();
+            VectorF pos = VectorF.fromEvent(mLastEvent);
 
-            if (!centerArea.contains(ex, centerArea.top))
+            if (!centerRect.contains(pos.x, centerRect.top))
             {
-                mKeyboardController.key(ex < centerArea.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                mKeyboardController.key(pos.x < centerRect.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+            }
+            else if (!centerRect.contains(centerRect.left, pos.y))
+            {
+                mKeyboardController.key(pos.y < centerRect.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
             }
 
-            if (!centerArea.contains(centerArea.left, ey))
+            if (mKeyboardController.isCtrlOn() || mKeyboardController.isAltOn())
             {
-                mKeyboardController.key(ey < centerArea.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                gotoSleep();
             }
 
             mHandler.postDelayed(mRunnable, 100);
@@ -1199,13 +1212,17 @@ extends InputMethodService
         protected void onRunBackToMove()
         {
             mState = State.MOVE;
-            mCursorX = mLastEvent.getRawX();
-            mCursorY = mLastEvent.getRawY();
+            mBasePos = VectorF.fromEvent(mLastEvent);
         }
 
         protected void onTouchUp(MotionEvent e)
         {
-            mState = State.FINISH;
+            gotoSleep();
+        }
+
+        private void gotoSleep()
+        {
+            mState = State.SLEEP;
             mHandler.removeCallbacks(mRunnable);
             mLastEvent = null;
         }
