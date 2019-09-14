@@ -187,43 +187,40 @@ extends InputMethodService
         public View onCreateInputView()
         {
             final View mainView = getLayoutInflater().inflate(R.layout.input_method, null);
-            final View keyboardView = getLayoutInflater().inflate(R.layout.keyboard, null);
+            
+            final ViewGroup keyboardArea = mainView.findViewById(R.id.keyboard_area);
+            final View keyboardView = getLayoutInflater().inflate(R.layout.keyboard, keyboardArea);
 
-            final ViewGroup centerPanel = mainView.findViewById(R.id.center_panel);
-            centerPanel.addView(keyboardView);
+            final View gestureArea = mainView.findViewById(R.id.gesture_area);
+            final Button extendKey = mainView.findViewById(R.id.button_key);
 
             setupMainView(mainView);
             setupKeyboardView(keyboardView);
-
+            setupExtendKey(extendKey, gestureArea, keyboardArea);
+            
             return mainView;
         }
 
         private void setupMainView(View view)
         {
             mCenterPanel = view.findViewById(R.id.center_panel);
-            final View gestureArea = view.findViewById(R.id.gesture_area);
-            final View keyboardArea = view.findViewById(R.id.keyboard_area);
-            final GestureOverlayView overlay = view.findViewById(R.id.gestures_overlay);
-            mInfo = mInfoCurrent = view.findViewById(R.id.info);
-            final GestureOverlayView overlayNum = view.findViewById(R.id.gestures_overlay_num);
+            mInfo = view.findViewById(R.id.info);
             mInfoNum = view.findViewById(R.id.info_num);
             mButtonShift = view.findViewById(R.id.button_shift);
             mButtonCtrl = view.findViewById(R.id.button_ctrl);
             mButtonAlt = view.findViewById(R.id.button_alt);
-            final Button extendKey = view.findViewById(R.id.button_key);
 
-            setupGestureOverlay(overlay, overlayNum);
+            setupGestureOverlays(view);
             setupButtonKey(view, R.id.button_shift);
             setupButtonKey(view, R.id.button_ctrl);
             setupButtonKey(view, R.id.button_alt);
             setupButtonKey(view, R.id.button_del);
             setupButtonKey(view, R.id.button_enter);
-            setupExtendKey(extendKey, gestureArea, keyboardArea);
+            mInfoCurrent = mInfo;
         }
 
         private void setupKeyboardView(final View view)
         {
-            view.setVisibility(View.INVISIBLE);
             setupButtonKey(view, R.id.keyboard_button_h);
             setupButtonKey(view, R.id.keyboard_button_j);
             setupButtonKey(view, R.id.keyboard_button_k);
@@ -241,8 +238,11 @@ extends InputMethodService
             setupButtonKey(view, R.id.keyboard_button_forward_del);
         }
 
-        private void setupGestureOverlay(final GestureOverlayView overlay, final GestureOverlayView overlayNum)
+        private void setupGestureOverlays(View view)
         {
+            final GestureOverlayView overlay = view.findViewById(R.id.gestures_overlay);
+            final GestureOverlayView overlayNum = view.findViewById(R.id.gestures_overlay_num);
+
             overlay.addOnGestureListener(
                 new OnGestureUnistrokeListener(mStoreAlpabet)
                 {
@@ -281,8 +281,10 @@ extends InputMethodService
             overlayNum.setOnTouchListener(onTouchCursorGestureListener);
         }
 
-        private void setupExtendKey(final Button extendKey, final View unistrokeArea, final View keyboardView)
+        private void setupExtendKey(final Button extendKey, final View unistrokeArea, final View keyboardArea)
         {
+            keyboardArea.setVisibility(View.INVISIBLE);
+
             extendKey.setOnClickListener(
                 new OnClickListener()
                 {
@@ -294,14 +296,14 @@ extends InputMethodService
 
                     private void toggleKeyboadOn()
                     {
-                        if (keyboardView.getVisibility() == View.VISIBLE)
+                        if (keyboardArea.getVisibility() == View.VISIBLE)
                         {
-                            keyboardView.setVisibility(View.INVISIBLE);
+                            keyboardArea.setVisibility(View.INVISIBLE);
                             unistrokeArea.setVisibility(View.VISIBLE);
                         }
                         else
                         {
-                            keyboardView.setVisibility(View.VISIBLE);
+                            keyboardArea.setVisibility(View.VISIBLE);
                             unistrokeArea.setVisibility(View.INVISIBLE);
                         }
                     }
