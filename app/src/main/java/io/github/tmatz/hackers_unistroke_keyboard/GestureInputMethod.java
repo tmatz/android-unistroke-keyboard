@@ -869,6 +869,7 @@ extends InputMethodService
 
         public OnShiftKeyListener(int keyCode)
         {
+            super(GestureInputMethod.this);
             mKeyCode = keyCode;
         }
 
@@ -1212,53 +1213,6 @@ extends InputMethodService
         private boolean isInGestureArea(MotionEvent e)
         {
             return mViewController.getCenterRect().contains(e.getRawX(), e.getRawY());
-        }
-    }
-
-    private abstract class OnTouchGestureListener
-    extends GestureDetector.SimpleOnGestureListener
-    implements OnTouchListener
-    {
-        private final GestureDetector mGestureDetector;
-
-        public OnTouchGestureListener()
-        {
-            mGestureDetector = new GestureDetector(GestureInputMethod.this, this);
-        }
-
-        public GestureDetector getGetGestureDetector()
-        {
-            return mGestureDetector;
-        }
-
-        @Override
-        public boolean onTouch(View view, MotionEvent e)
-        {
-            return mGestureDetector.onTouchEvent(e);
-        }
-    }
-
-    private abstract class GestureOverlayViewOnGestureListener
-    implements GestureOverlayView.OnGestureListener
-    {
-        @Override
-        public void onGesture(GestureOverlayView overlay, MotionEvent e)
-        {
-        }
-
-        @Override
-        public void onGestureCancelled(GestureOverlayView overlay, MotionEvent e)
-        {
-        }
-
-        @Override
-        public void onGestureStarted(GestureOverlayView overlay, MotionEvent e)
-        {
-        }
-
-        @Override
-        public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
-        {
         }
     }
 }
