@@ -116,36 +116,6 @@ extends InputMethodService
         }
     }
 
-    private void setupButtonKey(View root, int id)
-    {
-        final Button button = root.findViewById(id);
-        final String tag = (String)button.getTag();
-        if (tag == null)
-        {
-            return;
-        }
-
-        final int keyCode = keyCodeFromTag(tag);
-        if (KeyEvent.isModifierKey(keyCode))
-        {
-            switch (keyCode)
-            {
-                case KeyEvent.KEYCODE_SHIFT_LEFT:
-                case KeyEvent.KEYCODE_SHIFT_RIGHT:
-                    button.setOnTouchListener(new OnShiftKeyListener(tag));
-                    break;
-
-                default:
-                    button.setOnTouchListener(new OnModifierKeyListener(tag));
-                    break;
-            }
-        }
-        else
-        {
-            button.setOnTouchListener(new OnKeyListener(tag));
-        }
-    }
-
     private static GestureLibrary createGesture(Context context, int rawId)
     {
         GestureLibrary store = GestureLibraries.fromRawResource(context, rawId);
@@ -185,7 +155,7 @@ extends InputMethodService
     private boolean vibrate()
     {
         Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
-        if (vibrator == null)
+        if (vibrator == null || !vibrator.hasVibrator())
         {
             return false;
         }
@@ -196,7 +166,7 @@ extends InputMethodService
     private boolean vibrateStrong()
     {
         Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
-        if (vibrator == null)
+        if (vibrator == null || !vibrator.hasVibrator())
         {
             return false;
         }
@@ -206,7 +176,7 @@ extends InputMethodService
 
     private class ViewController
     {
-        private ViewGroup mGestureArea;
+        private ViewGroup mCenterPanel;
         private Button mButtonShift;
         private Button mButtonCtrl;
         private Button mButtonAlt;
@@ -216,37 +186,63 @@ extends InputMethodService
 
         public View onCreateInputView()
         {
-            final View view = getLayoutInflater().inflate(R.layout.input_method, null);
-            final View keyboardView = createKeyboardView();
+            final View mainView = getLayoutInflater().inflate(R.layout.input_method, null);
+            
+            final ViewGroup keyboardArea = mainView.findViewById(R.id.keyboard_area);
+            final View keyboardView = getLayoutInflater().inflate(R.layout.keyboard, keyboardArea);
 
-            mGestureArea = view.findViewById(R.id.gesture_area);
-            final View unistrokeArea = view.findViewById(R.id.unistroke_area);
-            final GestureOverlayView overlay = view.findViewById(R.id.gestures_overlay);
+            final View gestureArea = mainView.findViewById(R.id.gesture_area);
+            final Button extendKey = mainView.findViewById(R.id.button_key);
+
+            setupMainView(mainView);
+            setupKeyboardView(keyboardView);
+            setupExtendKey(extendKey, gestureArea, keyboardArea);
+            
+            return mainView;
+        }
+
+        private void setupMainView(View view)
+        {
+            mCenterPanel = view.findViewById(R.id.center_panel);
             mInfo = view.findViewById(R.id.info);
-            final GestureOverlayView overlayNum = view.findViewById(R.id.gestures_overlay_num);
             mInfoNum = view.findViewById(R.id.info_num);
             mButtonShift = view.findViewById(R.id.button_shift);
             mButtonCtrl = view.findViewById(R.id.button_ctrl);
             mButtonAlt = view.findViewById(R.id.button_alt);
-            final Button extendKey = view.findViewById(R.id.button_key);
 
-            mInfoCurrent = mInfo;
-            mGestureArea.addView(keyboardView);
-            keyboardView.setVisibility(View.INVISIBLE);
-
-            setupGestureOverlay(overlay, overlayNum);
+            setupGestureOverlays(view);
             setupButtonKey(view, R.id.button_shift);
             setupButtonKey(view, R.id.button_ctrl);
             setupButtonKey(view, R.id.button_alt);
             setupButtonKey(view, R.id.button_del);
             setupButtonKey(view, R.id.button_enter);
-            setupExtendKey(extendKey, unistrokeArea, keyboardView);
-
-            return view;
+            mInfoCurrent = mInfo;
         }
 
-        private void setupGestureOverlay(final GestureOverlayView overlay, final GestureOverlayView overlayNum)
+        private void setupKeyboardView(final View view)
         {
+            setupButtonKey(view, R.id.keyboard_button_h);
+            setupButtonKey(view, R.id.keyboard_button_j);
+            setupButtonKey(view, R.id.keyboard_button_k);
+            setupButtonKey(view, R.id.keyboard_button_l);
+            setupButtonKey(view, R.id.keyboard_button_z);
+            setupButtonKey(view, R.id.keyboard_button_x);
+            setupButtonKey(view, R.id.keyboard_button_c);
+            setupButtonKey(view, R.id.keyboard_button_v);
+            setupButtonKey(view, R.id.keyboard_button_home);
+            setupButtonKey(view, R.id.keyboard_button_move_end);
+            setupButtonKey(view, R.id.keyboard_button_dpad_left);
+            setupButtonKey(view, R.id.keyboard_button_dpad_right);
+            setupButtonKey(view, R.id.keyboard_button_dpad_up);
+            setupButtonKey(view, R.id.keyboard_button_dpad_down);
+            setupButtonKey(view, R.id.keyboard_button_forward_del);
+        }
+
+        private void setupGestureOverlays(View view)
+        {
+            final GestureOverlayView overlay = view.findViewById(R.id.gestures_overlay);
+            final GestureOverlayView overlayNum = view.findViewById(R.id.gestures_overlay_num);
+
             overlay.addOnGestureListener(
                 new OnGestureUnistrokeListener(mStoreAlpabet)
                 {
@@ -269,35 +265,26 @@ extends InputMethodService
                     }
                 });
 
-            overlay.setOnTouchListener(
-                new OnTouchCursorGestureListener()
+            final OnTouchCursorGestureListener onTouchCursorGestureListener =                 new OnTouchCursorGestureListener()
+            {
+                @Override
+                protected void onRunStart()
                 {
-                    @Override
-                    public void onRunStart()
-                    {
-                        overlay.clear(false);
-                        overlayNum.clear(false);
+                    overlay.clear(false);
+                    overlayNum.clear(false);
 
-                        super.onRunStart();
-                    }
-                });
+                    super.onRunStart();
+                }
+            };
 
-            overlayNum.setOnTouchListener(
-                new OnTouchCursorGestureListener()
-                {
-                    @Override
-                    public void onRunStart()
-                    {
-                        overlay.clear(false);
-                        overlayNum.clear(false);
-
-                        super.onRunStart();
-                    }
-                });
+            overlay.setOnTouchListener(onTouchCursorGestureListener);
+            overlayNum.setOnTouchListener(onTouchCursorGestureListener);
         }
 
-        private void setupExtendKey(final Button extendKey, final View unistrokeArea, final View keyboardView)
+        private void setupExtendKey(final Button extendKey, final View unistrokeArea, final View keyboardArea)
         {
+            keyboardArea.setVisibility(View.INVISIBLE);
+
             extendKey.setOnClickListener(
                 new OnClickListener()
                 {
@@ -309,41 +296,46 @@ extends InputMethodService
 
                     private void toggleKeyboadOn()
                     {
-                        if (keyboardView.getVisibility() == View.VISIBLE)
+                        if (keyboardArea.getVisibility() == View.VISIBLE)
                         {
-                            keyboardView.setVisibility(View.INVISIBLE);
+                            keyboardArea.setVisibility(View.INVISIBLE);
                             unistrokeArea.setVisibility(View.VISIBLE);
                         }
                         else
                         {
-                            keyboardView.setVisibility(View.VISIBLE);
+                            keyboardArea.setVisibility(View.VISIBLE);
                             unistrokeArea.setVisibility(View.INVISIBLE);
                         }
                     }
                 });
         }
 
-        private View createKeyboardView()
+        private void setupButtonKey(View rootView, int id)
         {
-            final View view = getLayoutInflater().inflate(R.layout.keyboard, null);
+            final Button button = rootView.findViewById(id);
+            final String tag = (String)button.getTag();
+            final int keyCode = keyCodeFromTag(tag);
+            switch (keyCode)
+            {
+                case KeyEvent.KEYCODE_UNKNOWN:
+                    break;
 
-            setupButtonKey(view, R.id.keyboard_button_h);
-            setupButtonKey(view, R.id.keyboard_button_j);
-            setupButtonKey(view, R.id.keyboard_button_k);
-            setupButtonKey(view, R.id.keyboard_button_l);
-            setupButtonKey(view, R.id.keyboard_button_z);
-            setupButtonKey(view, R.id.keyboard_button_x);
-            setupButtonKey(view, R.id.keyboard_button_c);
-            setupButtonKey(view, R.id.keyboard_button_v);
-            setupButtonKey(view, R.id.keyboard_button_home);
-            setupButtonKey(view, R.id.keyboard_button_move_end);
-            setupButtonKey(view, R.id.keyboard_button_dpad_left);
-            setupButtonKey(view, R.id.keyboard_button_dpad_right);
-            setupButtonKey(view, R.id.keyboard_button_dpad_up);
-            setupButtonKey(view, R.id.keyboard_button_dpad_down);
-            setupButtonKey(view, R.id.keyboard_button_forward_del);
+                case KeyEvent.KEYCODE_SHIFT_LEFT:
+                case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                    button.setOnTouchListener(new OnShiftKeyListener(keyCode));
+                    break;
 
-            return view;
+                case KeyEvent.KEYCODE_CTRL_LEFT:
+                case KeyEvent.KEYCODE_CTRL_RIGHT:
+                case KeyEvent.KEYCODE_ALT_LEFT:
+                case KeyEvent.KEYCODE_ALT_RIGHT:
+                    button.setOnTouchListener(new OnModifierKeyListener(keyCode));
+                    break;
+
+                default:
+                    button.setOnTouchListener(new OnKeyListener(keyCode));
+                    break;
+            }
         }
 
         public void setShiftOn(boolean on)
@@ -404,9 +396,9 @@ extends InputMethodService
             return new RectF(x, y, x + w, y + h);
         }
 
-        public RectF getGestureAreaRect()
+        public RectF getCenterRect()
         {
-            return getViewRect(mGestureArea);
+            return getViewRect(mCenterPanel);
         }
     }
 
@@ -448,6 +440,11 @@ extends InputMethodService
             return mSpecialOn;
         }
 
+        private boolean isShiftUsed()
+        {
+            return mShiftUsed;
+        }
+
         private void sendText(String str)
         {
             getCurrentInputConnection().commitText(str, str.length());
@@ -464,73 +461,37 @@ extends InputMethodService
 
         private void keyDown(int keyCode)
         {
-            if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
-            {
-                return;
-            }
-
             switch (keyCode)
             {
+                case KeyEvent.KEYCODE_UNKNOWN:
+                    break;
+
                 case KeyEvent.KEYCODE_CTRL_LEFT:
                 case KeyEvent.KEYCODE_CTRL_RIGHT:
-                    // clear used SHIFT
-                    if (isShiftOn() && mShiftUsed)
-                    {
-                        mMetaState &= ~META_SHIFT;
-                        mShiftUsed = false;
-                    }
-                    // toggle CTRL
-                    mMetaState ^= META_CTRL;
+                    onCtrlDown();
                     break;
 
                 case KeyEvent.KEYCODE_SHIFT_LEFT:
                 case KeyEvent.KEYCODE_SHIFT_RIGHT:
-                    // switch tri-state
-                    if (isCapsLockOn())
-                    {
-                        mMetaState &= ~META_CAPS_LOCK;
-                    }
-                    else if (isShiftOn())
-                    {
-                        mMetaState &= ~META_SHIFT;
-                        mMetaState |= META_CAPS_LOCK;
-                    }
-                    else
-                    {
-                        mMetaState |= META_SHIFT;
-                    }
-                    mShiftUsed = false;
+                    onShiftDown();
                     break;
 
                 case KeyEvent.KEYCODE_ALT_LEFT:
                 case KeyEvent.KEYCODE_ALT_RIGHT:
-                    // toggle ALT
-                    mMetaState ^= META_ALT;
+                    onAltDown();
                     break;
 
                 case KeyEvent.KEYCODE_PERIOD:
-                    if (isSpecialOn())
-                    {
-                        sendKeyDown(keyCode);
-                    }
+                    onPeriodDown();
                     break;
 
                 case KeyEvent.KEYCODE_DEL:
                 case KeyEvent.KEYCODE_FORWARD_DEL:
-                    if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
-                    {
-                        sendKeyDown(keyCode);
-                    }
+                    onDelDown(keyCode);
                     break;
 
                 case KeyEvent.KEYCODE_ENTER:
-                    if (isEditorActionRequested())
-                    {
-                        getCurrentInputConnection().performEditorAction(getEditorAction());
-                        return;
-                    }
-
-                    sendKeyDown(keyCode);
+                    onEnterDown();
                     break;
 
                 default:
@@ -543,13 +504,11 @@ extends InputMethodService
 
         private void keyUp(int keyCode)
         {
-            if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
-            {
-                return;
-            }
-
             switch (keyCode)
             {
+                case KeyEvent.KEYCODE_UNKNOWN:
+                    break;
+
                 case KeyEvent.KEYCODE_CTRL_LEFT:
                 case KeyEvent.KEYCODE_CTRL_RIGHT:
                 case KeyEvent.KEYCODE_SHIFT_LEFT:
@@ -560,50 +519,23 @@ extends InputMethodService
                     break;
 
                 case KeyEvent.KEYCODE_PERIOD:
-                    if (isSpecialOn())
-                    {
-                        sendKeyUp(keyCode);
-                        mMetaState &= META_CAPS_LOCK;
-                        mSpecialOn = false;
-                    }
-                    else
-                    {
-                        mSpecialOn = true;
-                    }
+                    onPeriodUp();
                     break;
 
                 case KeyEvent.KEYCODE_DPAD_LEFT:
                 case KeyEvent.KEYCODE_DPAD_RIGHT:
                 case KeyEvent.KEYCODE_DPAD_UP:
                 case KeyEvent.KEYCODE_DPAD_DOWN:
-                    sendKeyUp(keyCode);
-                    mMetaState &= ~(META_CTRL | META_ALT);
-                    mSpecialOn = false;
-                    if (isShiftOn())
-                    {
-                        mShiftUsed = true;
-                    }
+                    onDPadUp(keyCode);
                     break;
 
                 case KeyEvent.KEYCODE_DEL:
                 case KeyEvent.KEYCODE_FORWARD_DEL:
-                    if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
-                    {
-                        sendKeyUp(keyCode);
-                    }
-                    mMetaState &= META_CAPS_LOCK;
-                    mSpecialOn = false;
+                    onDelUp(keyCode);
                     break;
 
                 case KeyEvent.KEYCODE_ENTER:
-                    if (isEditorActionRequested())
-                    {
-                        return;
-                    }
-
-                    sendKeyUp(keyCode);
-                    mMetaState &= META_CAPS_LOCK;
-                    mSpecialOn = false;
+                    onEnterUp();
                     break;
 
                 default:
@@ -614,6 +546,116 @@ extends InputMethodService
             }
 
             setState();
+        }
+
+        private void onCtrlDown()
+        {
+            mMetaState ^= META_CTRL;
+
+            // clear used SHIFT
+            if (isShiftOn() && isShiftUsed())
+            {
+                mMetaState &= ~META_SHIFT;
+                mShiftUsed = false;
+            }
+        }
+
+        private void onShiftDown()
+        {
+            mShiftUsed = false;
+            if (isCapsLockOn())
+            {
+                mMetaState &= ~META_CAPS_LOCK;
+            }
+            else if (isShiftOn())
+            {
+                mMetaState &= ~META_SHIFT;
+                mMetaState |= META_CAPS_LOCK;
+            }
+            else
+            {
+                mMetaState |= META_SHIFT;
+            }
+        }
+
+        private void onAltDown()
+        {
+            mMetaState ^= META_ALT;
+        }
+
+        private void onPeriodDown()
+        {
+            if (isSpecialOn())
+            {
+                sendKeyDown(KeyEvent.KEYCODE_PERIOD);
+            }
+        }
+
+        private void onPeriodUp()
+        {
+            if (isSpecialOn())
+            {
+                sendKeyUp(KeyEvent.KEYCODE_PERIOD);
+                mMetaState &= META_CAPS_LOCK;
+                mSpecialOn = false;
+            }
+            else
+            {
+                mSpecialOn = true;
+            }
+        }
+
+        private void onDelDown(int keyCode)
+        {
+            if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
+            {
+                sendKeyDown(keyCode);
+            }
+        }
+
+        private void onDelUp(int keyCode)
+        {
+            if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
+            {
+                sendKeyUp(keyCode);
+            }
+
+            mMetaState &= META_CAPS_LOCK;
+            mSpecialOn = false;
+        }
+
+        private void onEnterDown()
+        {
+            if (isEditorActionRequested())
+            {
+                getCurrentInputConnection().performEditorAction(getEditorAction());
+                return;
+            }
+
+            sendKeyDown(KeyEvent.KEYCODE_ENTER);
+        }
+
+        private void onEnterUp()
+        {
+            if (isEditorActionRequested())
+            {
+                return;
+            }
+
+            sendKeyUp(KeyEvent.KEYCODE_ENTER);
+            mMetaState &= META_CAPS_LOCK;
+            mSpecialOn = false;
+        }
+
+        private void onDPadUp(int keyCode)
+        {
+            sendKeyUp(keyCode);
+            mMetaState &= ~(META_CTRL | META_ALT);
+            mSpecialOn = false;
+            if (isShiftOn())
+            {
+                mShiftUsed = true;
+            }
         }
 
         private void keyRepeat(int keyCode)
@@ -708,9 +750,9 @@ extends InputMethodService
             }
         };
 
-        public OnKeyListener(String tag)
+        public OnKeyListener(int keyCode)
         {
-            mKeyCode = keyCodeFromTag(tag);
+            mKeyCode = keyCode;
         }
 
         @Override
@@ -752,9 +794,9 @@ extends InputMethodService
         private final int mKeyCode;
         private boolean mKeyDown;
 
-        public OnModifierKeyListener(String tag)
+        public OnModifierKeyListener(int keyCode)
         {
-            mKeyCode = keyCodeFromTag(tag);
+            mKeyCode = keyCode;
         }
 
         @Override
@@ -794,9 +836,9 @@ extends InputMethodService
         private final int mKeyCode;
         private boolean mKeyDown;
 
-        public OnShiftKeyListener(String tag)
+        public OnShiftKeyListener(int keyCode)
         {
-            mKeyCode = keyCodeFromTag(tag);
+            mKeyCode = keyCode;
         }
 
         @Override
@@ -1100,18 +1142,18 @@ extends InputMethodService
 
         protected void onRunRepeat()
         {
-            final RectF gestureArea = mViewController.getGestureAreaRect();
+            final RectF centerArea = mViewController.getCenterRect();
             final float ex = mLastEvent.getRawX();
             final float ey = mLastEvent.getRawY();
 
-            if (!gestureArea.contains(ex, gestureArea.top))
+            if (!centerArea.contains(ex, centerArea.top))
             {
-                mKeyboardController.key(ex < gestureArea.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                mKeyboardController.key(ex < centerArea.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
             }
 
-            if (!gestureArea.contains(gestureArea.left, ey))
+            if (!centerArea.contains(centerArea.left, ey))
             {
-                mKeyboardController.key(ey < gestureArea.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                mKeyboardController.key(ey < centerArea.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
             }
 
             mHandler.postDelayed(mRunnable, 100);
@@ -1138,11 +1180,7 @@ extends InputMethodService
 
         private boolean isInGestureArea(MotionEvent e)
         {
-            RectF viewRect = mViewController.getGestureAreaRect();
-            float ex = e.getRawX();
-            float ey = e.getRawY();
-
-            return viewRect.contains(ex, ey);
+            return mViewController.getCenterRect().contains(e.getRawX(), e.getRawY());
         }
     }
 

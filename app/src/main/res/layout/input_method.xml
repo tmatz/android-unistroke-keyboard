@@ -60,13 +60,13 @@
             android:layout_height="match_parent"
             android:layout_width="0dip"
             android:layout_weight="1.0"
-            android:id="@+id/gesture_area">
+            android:id="@+id/center_panel">
 
             <LinearLayout
                 android:layout_height="match_parent"
                 android:layout_width="match_parent"
                 android:orientation="horizontal"
-                android:id="@+id/unistroke_area">
+                android:id="@+id/gesture_area">
 
                 <android.gesture.GestureOverlayView
                     android:id="@+id/gestures_overlay"
@@ -109,6 +109,11 @@
                 </android.gesture.GestureOverlayView>
 
             </LinearLayout>
+
+            <FrameLayout
+                android:layout_height="match_parent"
+                android:layout_width="match_parent"
+                android:id="@+id/keyboard_area"/>
 
         </FrameLayout>
 
