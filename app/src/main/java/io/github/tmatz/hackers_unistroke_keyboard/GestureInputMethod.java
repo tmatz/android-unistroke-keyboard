@@ -206,24 +206,35 @@ extends InputMethodService
 
     private class ViewController
     {
-        private View mView;
         private ViewGroup mGestureArea;
-        private View mKeyboardView;
         private Button mButtonShift;
         private Button mButtonCtrl;
         private Button mButtonAlt;
-        private TextView mInfoAlphabet;
+        private TextView mInfo;
         private TextView mInfoNum;
         private TextView mInfoCurrent;
 
         public View onCreateInputView()
         {
-            mView = getLayoutInflater().inflate(R.layout.input_method, null);
-            mGestureArea = mView.findViewById(R.id.gesture_area);
-            final View unistrokeArea = mView.findViewById(R.id.unistroke_area);
+            final View view = getLayoutInflater().inflate(R.layout.input_method, null);
+            final View keyboardView = getLayoutInflater().inflate(R.layout.keyboard, null);
 
-            final GestureOverlayView overlay = mView.findViewById(R.id.gestures_overlay);
-            mInfoAlphabet = mView.findViewById(R.id.info);
+            mGestureArea = view.findViewById(R.id.gesture_area);
+            final View unistrokeArea = view.findViewById(R.id.unistroke_area);
+            final GestureOverlayView overlay = view.findViewById(R.id.gestures_overlay);
+            mInfo = view.findViewById(R.id.info);
+            final GestureOverlayView overlayNum = view.findViewById(R.id.gestures_overlay_num);
+            mInfoNum = view.findViewById(R.id.info_num);
+            mButtonShift = view.findViewById(R.id.button_shift);
+            mButtonCtrl = view.findViewById(R.id.button_ctrl);
+            mButtonAlt = view.findViewById(R.id.button_alt);
+            final Button extendKey = view.findViewById(R.id.button_key);
+
+            mInfoCurrent = mInfo;
+
+            mGestureArea.addView(keyboardView);
+            keyboardView.setVisibility(View.INVISIBLE);
+            
             overlay.addOnGestureListener(
                 new OnGestureUnistrokeListener(mStoreAlpabet)
                 {
@@ -234,10 +245,7 @@ extends InputMethodService
                         super.onGestureEnded(overlay, e);
                     }
                 });
-            mInfoCurrent = mInfoAlphabet;
 
-            final GestureOverlayView overlayNum = mView.findViewById(R.id.gestures_overlay_num);
-            mInfoNum = mView.findViewById(R.id.info_num);
             overlayNum.addOnGestureListener(
                 new OnGestureUnistrokeListener(mStoreNumber)
                 {
@@ -275,58 +283,53 @@ extends InputMethodService
                     }
                 });
 
-            mButtonShift = mView.findViewById(R.id.button_shift);
-            mButtonCtrl = mView.findViewById(R.id.button_ctrl);
-            mButtonAlt = mView.findViewById(R.id.button_alt);
+            setupButtonKey(view, R.id.button_shift);
+            setupButtonKey(view, R.id.button_ctrl);
+            setupButtonKey(view, R.id.button_alt);
+            setupButtonKey(view, R.id.button_del);
+            setupButtonKey(view, R.id.button_enter);
 
-            setupButtonKey(mView, R.id.button_shift);
-            setupButtonKey(mView, R.id.button_ctrl);
-            setupButtonKey(mView, R.id.button_alt);
-            setupButtonKey(mView, R.id.button_del);
-            setupButtonKey(mView, R.id.button_enter);
-
-            final Button extendKey = mView.findViewById(R.id.button_key);
             extendKey.setOnClickListener(
                 new OnClickListener()
                 {
                     @Override
-                    public void onClick(View p1)
+                    public void onClick(View v)
                     {
-                        if (mKeyboardView.getVisibility() == View.VISIBLE)
+                        toggleKeyboadOn();
+                    }
+
+                    private void toggleKeyboadOn()
+                    {
+                        if (keyboardView.getVisibility() == View.VISIBLE)
                         {
-                            mKeyboardView.setVisibility(View.INVISIBLE);
+                            keyboardView.setVisibility(View.INVISIBLE);
                             unistrokeArea.setVisibility(View.VISIBLE);
                         }
                         else
                         {
-                            mKeyboardView.setVisibility(View.VISIBLE);
+                            keyboardView.setVisibility(View.VISIBLE);
                             unistrokeArea.setVisibility(View.INVISIBLE);
                         }
                     }
                 });
 
-            mKeyboardView = getLayoutInflater().inflate(R.layout.keyboard, null);
+            setupButtonKey(keyboardView, R.id.keyboard_button_h);
+            setupButtonKey(keyboardView, R.id.keyboard_button_j);
+            setupButtonKey(keyboardView, R.id.keyboard_button_k);
+            setupButtonKey(keyboardView, R.id.keyboard_button_l);
+            setupButtonKey(keyboardView, R.id.keyboard_button_z);
+            setupButtonKey(keyboardView, R.id.keyboard_button_x);
+            setupButtonKey(keyboardView, R.id.keyboard_button_c);
+            setupButtonKey(keyboardView, R.id.keyboard_button_v);
+            setupButtonKey(keyboardView, R.id.keyboard_button_home);
+            setupButtonKey(keyboardView, R.id.keyboard_button_move_end);
+            setupButtonKey(keyboardView, R.id.keyboard_button_dpad_left);
+            setupButtonKey(keyboardView, R.id.keyboard_button_dpad_right);
+            setupButtonKey(keyboardView, R.id.keyboard_button_dpad_up);
+            setupButtonKey(keyboardView, R.id.keyboard_button_dpad_down);
+            setupButtonKey(keyboardView, R.id.keyboard_button_forward_del);
 
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_h);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_j);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_k);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_l);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_z);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_x);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_c);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_v);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_home);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_move_end);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_dpad_left);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_dpad_right);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_dpad_up);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_dpad_down);
-            setupButtonKey(mKeyboardView, R.id.keyboard_button_forward_del);
-
-            mGestureArea.addView(mKeyboardView);
-            mKeyboardView.setVisibility(View.INVISIBLE);
-
-            return mView;
+            return view;
         }
 
         public void setShiftOn(boolean on)
@@ -356,22 +359,21 @@ extends InputMethodService
 
         public void setAlphabetActive()
         {
-            if (mInfoCurrent != mInfoAlphabet)
-            {
-
-                mInfoAlphabet.setText(mInfoCurrent.getText());
-                mInfoCurrent.setText("");
-                mInfoCurrent = mInfoAlphabet;
-            }
+            setActiveInfo(mInfo);
         }
 
         public void setNumberActive()
         {
-            if (mInfoCurrent != mInfoNum)
+            setActiveInfo(mInfoNum);
+        }
+
+        private void setActiveInfo(TextView info)
+        {
+            if (!mInfoCurrent.equals(info))
             {
-                mInfoNum.setText(mInfoCurrent.getText());
+                info.setText(mInfoCurrent.getText());
                 mInfoCurrent.setText("");
-                mInfoCurrent = mInfoNum;
+                mInfoCurrent = info;
             }
         }
 
