@@ -61,7 +61,6 @@ extends InputMethodService
     public View onCreateInputView()
     {
         View view = mViewController.onCreateInputView();
-        mKeyboardController.setState();
         return view;
     }
 
@@ -189,9 +188,7 @@ extends InputMethodService
         private Button mButtonShift;
         private Button mButtonCtrl;
         private Button mButtonAlt;
-        private TextView mInfo;
-        private TextView mInfoNum;
-        private TextView mInfoCurrent;
+        private final InfoView mInfoView = new InfoView();
 
         public View onCreateInputView()
         {
@@ -206,6 +203,9 @@ extends InputMethodService
             setupMainView(mainView);
             setupKeyboardView(keyboardView);
             setupExtendKey(extendKey, gestureArea, keyboardArea);
+            mInfoView.setup(mainView);
+
+            update();
 
             return mainView;
         }
@@ -213,8 +213,6 @@ extends InputMethodService
         private void setupMainView(View view)
         {
             mCenterPanel = view.findViewById(R.id.center_panel);
-            mInfo = view.findViewById(R.id.info);
-            mInfoNum = view.findViewById(R.id.info_num);
             mButtonShift = view.findViewById(R.id.button_shift);
             mButtonCtrl = view.findViewById(R.id.button_ctrl);
             mButtonAlt = view.findViewById(R.id.button_alt);
@@ -225,7 +223,6 @@ extends InputMethodService
             setupButtonKey(view, R.id.button_alt);
             setupButtonKey(view, R.id.button_del);
             setupButtonKey(view, R.id.button_enter);
-            mInfoCurrent = mInfo;
         }
 
         private void setupKeyboardView(final View view)
@@ -347,49 +344,30 @@ extends InputMethodService
             }
         }
 
-        public void setShiftOn(boolean on)
+        public void update()
         {
-            mButtonShift.setBackgroundResource(on ? R.drawable.button_active : R.drawable.button);
-        }
+            if (mKeyboardController.isCapsLockOn())
+            {
+                mButtonShift.setBackgroundResource(R.drawable.button_locked);
+            }
+            else
+            {
+                mButtonShift.setBackgroundResource(mKeyboardController.isShiftOn() ? R.drawable.button_active : R.drawable.button);
+            }
 
-        public void setCapsOn(boolean on)
-        {
-            mButtonShift.setBackgroundResource(on ? R.drawable.button_locked : R.drawable.button);
-        }
-
-        public void setCtrlOn(boolean on)
-        {
-            mButtonCtrl.setBackgroundResource(on ? R.drawable.button_active : R.drawable.button);
-        }
-
-        public void setAltOn(boolean on)
-        {
-            mButtonAlt.setBackgroundResource(on ? R.drawable.button_active : R.drawable.button);
-        }
-
-        public void setSpecialOn(boolean on)
-        {
-            mInfoCurrent.setText(on ? "special" : "");
+            mButtonCtrl.setBackgroundResource(mKeyboardController.isCtrlOn() ? R.drawable.button_active : R.drawable.button);
+            mButtonAlt.setBackgroundResource(mKeyboardController.isAltOn() ? R.drawable.button_active : R.drawable.button);
+            mInfoView.setText(mKeyboardController.isSpecialOn() ? "special" : "");
         }
 
         public void setAlphabetActive()
         {
-            setActiveInfo(mInfo);
+            mInfoView.setAlphabetActive();
         }
 
         public void setNumberActive()
         {
-            setActiveInfo(mInfoNum);
-        }
-
-        private void setActiveInfo(TextView info)
-        {
-            if (!mInfoCurrent.equals(info))
-            {
-                info.setText(mInfoCurrent.getText());
-                mInfoCurrent.setText("");
-                mInfoCurrent = info;
-            }
+            mInfoView.setNumberActive();
         }
 
         public RectF getViewRect(View view)
@@ -408,6 +386,45 @@ extends InputMethodService
         public RectF getCenterRect()
         {
             return getViewRect(mCenterPanel);
+        }
+
+        private class InfoView
+        {
+            private TextView mInfo;
+            private TextView mInfoNum;
+            private TextView mInfoCurrent;
+
+            public void setup(View view)
+            {
+                mInfo = view.findViewById(R.id.info);
+                mInfoNum = view.findViewById(R.id.info_num);
+                mInfoCurrent = mInfo;
+            }
+
+            public void setText(String text)
+            {
+                mInfoView.mInfoCurrent.setText(text);
+            }
+
+            public void setAlphabetActive()
+            {
+                setActiveInfo(mInfo);
+            }
+
+            public void setNumberActive()
+            {
+                setActiveInfo(mInfoNum);
+            }
+
+            private void setActiveInfo(TextView info)
+            {
+                if (!mInfoView.mInfoCurrent.equals(info))
+                {
+                    info.setText(mInfoView.mInfoCurrent.getText());
+                    mInfoView.mInfoCurrent.setText("");
+                    mInfoView.mInfoCurrent = info;
+                }
+            }
         }
     }
 
@@ -477,7 +494,7 @@ extends InputMethodService
             getCurrentInputConnection().commitText(str, str.length());
             mMetaState &= META_CAPS_LOCK;
             mSpecialOn = false;
-            setState();
+            mViewController.update();
         }
 
         private void key(int keyCode)
@@ -489,13 +506,13 @@ extends InputMethodService
         private void keyDown(int keyCode)
         {
             mKeyHandlers.getOrDefault(keyCode, mDefaultKeyHandler).down(keyCode);
-            setState();
+            mViewController.update();
         }
 
         private void keyUp(int keyCode)
         {
             mKeyHandlers.getOrDefault(keyCode, mDefaultKeyHandler).up(keyCode);
-            setState();
+            mViewController.update();
         }
 
         public void keyRepeat(int keyCode)
@@ -531,22 +548,6 @@ extends InputMethodService
             {
                 sendEvent(toKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~META_SHIFT));
             }
-        }
-
-        private void setState()
-        {
-            if (isCapsLockOn())
-            {
-                mViewController.setCapsOn(true);
-            }
-            else
-            {
-                mViewController.setShiftOn(isShiftOn());
-            }
-
-            mViewController.setCtrlOn(isCtrlOn());
-            mViewController.setAltOn(isAltOn());
-            mViewController.setSpecialOn(isSpecialOn());
         }
 
         private class KeyHandler
@@ -713,7 +714,14 @@ extends InputMethodService
             public void up(int keyCode)
             {
                 sendKeyUp(keyCode);
-                mMetaState &= (META_SHIFT | META_CAPS_LOCK);
+                if (isCtrlOn() || isAltOn())
+                {
+                    mMetaState &= ~(META_SHIFT | META_CTRL | META_ALT);
+                }
+                else
+                {
+                    mMetaState &= ~(META_CTRL | META_ALT);
+                }
                 mSpecialOn = false;
                 if (isShiftOn())
                 {
@@ -788,7 +796,7 @@ extends InputMethodService
         @Override
         public boolean onTouch(View v, MotionEvent e)
         {
-            final RectF rect = mViewController.getViewRect(v);
+            RectF rect = mViewController.getViewRect(v);
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
@@ -832,7 +840,7 @@ extends InputMethodService
         @Override
         public boolean onTouch(View v, MotionEvent e)
         {
-            final RectF rect = mViewController.getViewRect(v);
+            RectF rect = mViewController.getViewRect(v);
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
@@ -868,6 +876,7 @@ extends InputMethodService
 
         public OnShiftKeyListener(int keyCode)
         {
+            super(GestureInputMethod.this);
             mKeyCode = keyCode;
         }
 
@@ -882,7 +891,7 @@ extends InputMethodService
         public boolean onTouch(View v, MotionEvent e)
         {
 
-            final RectF rect = mViewController.getViewRect(v);
+            RectF rect = mViewController.getViewRect(v);
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
@@ -914,9 +923,9 @@ extends InputMethodService
     private class OnGestureUnistrokeListener
     extends GestureOverlayViewOnGestureListener
     {
-        private final float mPeriodTolerance = getResources().getDimension(R.dimen.period_tolerance);
         private static final PredictionResult sPredictionFailed = new PredictionResult();
 
+        private final float mPeriodTolerance = getResources().getDimension(R.dimen.period_tolerance);
         private final GestureLibrary mMainStore;
 
         public OnGestureUnistrokeListener(GestureLibrary mainStore)
@@ -927,7 +936,7 @@ extends InputMethodService
         @Override
         public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
         {
-            final Gesture gesture = overlay.getGesture();
+            Gesture gesture = overlay.getGesture();
             PredictionResult prediction = sPredictionFailed;
 
             if (mKeyboardController.isSpecialOn())
@@ -1002,18 +1011,17 @@ extends InputMethodService
     {
         private enum State
         {
+            SLEEP,
             START,
             MOVE,
             REPEAT,
             BACK_TO_MOVE,
-            FINISH,
         }
 
         private final float mCursorTolerance = getResources().getDimension(R.dimen.cursor_tolerance);
 
-        private State mState;
-        private float mCursorX;
-        private float mCursorY;
+        private State mState = State.SLEEP;
+        private VectorF mBasePos = new VectorF();
         private float mMoveDistance;
         private MotionEvent mLastEvent;
 
@@ -1095,33 +1103,28 @@ extends InputMethodService
 
             mState = State.START;
             mLastEvent = e;
-            mCursorX = e.getRawX();
-            mCursorY = e.getRawY();
+            mBasePos = VectorF.fromEvent(e);
             mMoveDistance = 0;
             mHandler.postDelayed(mRunnable, CURSOR_GESTURE_START_MS);
         }
 
         protected void onTouchMoveStart(MotionEvent e)
         {
-            float dx = Math.abs(e.getRawX() - mCursorX);
-            float dy = Math.abs(e.getRawY() - mCursorY);
-
-            mMoveDistance += dx + dy;
             mLastEvent = e;
-            mCursorX = e.getRawX();
-            mCursorY = e.getRawY();
+            VectorF pos = VectorF.fromEvent(e);
+            float length = pos.sub(mBasePos).fastLength();
+            mBasePos = pos;
+            mMoveDistance += length;
 
             if (mMoveDistance > mCursorTolerance)
             {
-                mState = State.FINISH;
-                mHandler.removeCallbacks(mRunnable);
+                gotoSleep();
             }
         }
 
         protected void onRunStart()
         {
-            mKeyboardController.mMetaState &= ~META_CTRL;
-            mKeyboardController.setState();
+            mViewController.update();
 
             if (!vibrate())
             {
@@ -1135,26 +1138,35 @@ extends InputMethodService
         {
             mLastEvent = e;
 
-            if (!isInGestureArea(e))
+            if (!isInGestureArea(e) && !mKeyboardController.isCtrlOn() && !mKeyboardController.isAltOn())
             {
                 mState = State.REPEAT;
                 mHandler.postDelayed(mRunnable, 100);
                 return;
             }
 
-            final float dx = mLastEvent.getRawX() - mCursorX;
-            final float dy = mLastEvent.getRawY() - mCursorY;
+            boolean isModifierOn = mKeyboardController.isCtrlOn() || mKeyboardController.isAltOn();
 
-            if (Math.abs(dx) >= mCursorTolerance)
+            VectorF delta = VectorF.fromEvent(e).sub(mBasePos).cutoff(mCursorTolerance);
+
+            if (delta.x != 0)
             {
-                mKeyboardController.key(dx < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
-                mCursorX += Math.copySign(mCursorTolerance, dx);
+                mKeyboardController.key(delta.x < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                mBasePos.x += Math.copySign(mCursorTolerance, delta.x);
+            }
+            else if (delta.y != 0)
+            {
+                mKeyboardController.key(delta.y < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                mBasePos.y += Math.copySign(mCursorTolerance, delta.y);
+            }
+            else
+            {
+                return;
             }
 
-            if (Math.abs(dy) >= mCursorTolerance)
+            if (isModifierOn)
             {
-                mKeyboardController.key(dy < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-                mCursorY += Math.copySign(mCursorTolerance, dy);
+                gotoSleep();
             }
         }
 
@@ -1172,18 +1184,21 @@ extends InputMethodService
 
         protected void onRunRepeat()
         {
-            final RectF centerArea = mViewController.getCenterRect();
-            final float ex = mLastEvent.getRawX();
-            final float ey = mLastEvent.getRawY();
+            RectF centerRect = mViewController.getCenterRect();
+            VectorF pos = VectorF.fromEvent(mLastEvent);
 
-            if (!centerArea.contains(ex, centerArea.top))
+            if (!centerRect.contains(pos.x, centerRect.top))
             {
-                mKeyboardController.key(ex < centerArea.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                mKeyboardController.key(pos.x < centerRect.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+            }
+            else if (!centerRect.contains(centerRect.left, pos.y))
+            {
+                mKeyboardController.key(pos.y < centerRect.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
             }
 
-            if (!centerArea.contains(centerArea.left, ey))
+            if (mKeyboardController.isCtrlOn() || mKeyboardController.isAltOn())
             {
-                mKeyboardController.key(ey < centerArea.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                gotoSleep();
             }
 
             mHandler.postDelayed(mRunnable, 100);
@@ -1197,13 +1212,17 @@ extends InputMethodService
         protected void onRunBackToMove()
         {
             mState = State.MOVE;
-            mCursorX = mLastEvent.getRawX();
-            mCursorY = mLastEvent.getRawY();
+            mBasePos = VectorF.fromEvent(mLastEvent);
         }
 
         protected void onTouchUp(MotionEvent e)
         {
-            mState = State.FINISH;
+            gotoSleep();
+        }
+
+        private void gotoSleep()
+        {
+            mState = State.SLEEP;
             mHandler.removeCallbacks(mRunnable);
             mLastEvent = null;
         }
@@ -1211,53 +1230,6 @@ extends InputMethodService
         private boolean isInGestureArea(MotionEvent e)
         {
             return mViewController.getCenterRect().contains(e.getRawX(), e.getRawY());
-        }
-    }
-
-    private abstract class OnTouchGestureListener
-    extends GestureDetector.SimpleOnGestureListener
-    implements OnTouchListener
-    {
-        private final GestureDetector mGestureDetector;
-
-        public OnTouchGestureListener()
-        {
-            mGestureDetector = new GestureDetector(GestureInputMethod.this, this);
-        }
-
-        public GestureDetector getGetGestureDetector()
-        {
-            return mGestureDetector;
-        }
-
-        @Override
-        public boolean onTouch(View view, MotionEvent e)
-        {
-            return mGestureDetector.onTouchEvent(e);
-        }
-    }
-
-    private abstract class GestureOverlayViewOnGestureListener
-    implements GestureOverlayView.OnGestureListener
-    {
-        @Override
-        public void onGesture(GestureOverlayView overlay, MotionEvent e)
-        {
-        }
-
-        @Override
-        public void onGestureCancelled(GestureOverlayView overlay, MotionEvent e)
-        {
-        }
-
-        @Override
-        public void onGestureStarted(GestureOverlayView overlay, MotionEvent e)
-        {
-        }
-
-        @Override
-        public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
-        {
         }
     }
 }
