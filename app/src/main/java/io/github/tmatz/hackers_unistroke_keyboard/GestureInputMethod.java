@@ -116,36 +116,6 @@ extends InputMethodService
         }
     }
 
-    private void setupButtonKey(View root, int id)
-    {
-        final Button button = root.findViewById(id);
-        final String tag = (String)button.getTag();
-        if (tag == null)
-        {
-            return;
-        }
-
-        final int keyCode = keyCodeFromTag(tag);
-        if (KeyEvent.isModifierKey(keyCode))
-        {
-            switch (keyCode)
-            {
-                case KeyEvent.KEYCODE_SHIFT_LEFT:
-                case KeyEvent.KEYCODE_SHIFT_RIGHT:
-                    button.setOnTouchListener(new OnShiftKeyListener(tag));
-                    break;
-
-                default:
-                    button.setOnTouchListener(new OnModifierKeyListener(tag));
-                    break;
-            }
-        }
-        else
-        {
-            button.setOnTouchListener(new OnKeyListener(tag));
-        }
-    }
-
     private static GestureLibrary createGesture(Context context, int rawId)
     {
         GestureLibrary store = GestureLibraries.fromRawResource(context, rawId);
@@ -269,31 +239,20 @@ extends InputMethodService
                     }
                 });
 
-            overlay.setOnTouchListener(
-                new OnTouchCursorGestureListener()
+            final OnTouchCursorGestureListener onTouchCursorGestureListener =                 new OnTouchCursorGestureListener()
+            {
+                @Override
+                protected void onRunStart()
                 {
-                    @Override
-                    public void onRunStart()
-                    {
-                        overlay.clear(false);
-                        overlayNum.clear(false);
+                    overlay.clear(false);
+                    overlayNum.clear(false);
 
-                        super.onRunStart();
-                    }
-                });
+                    super.onRunStart();
+                }
+            };
 
-            overlayNum.setOnTouchListener(
-                new OnTouchCursorGestureListener()
-                {
-                    @Override
-                    public void onRunStart()
-                    {
-                        overlay.clear(false);
-                        overlayNum.clear(false);
-
-                        super.onRunStart();
-                    }
-                });
+            overlay.setOnTouchListener(onTouchCursorGestureListener);
+            overlayNum.setOnTouchListener(onTouchCursorGestureListener);
         }
 
         private void setupExtendKey(final Button extendKey, final View unistrokeArea, final View keyboardView)
@@ -344,6 +303,34 @@ extends InputMethodService
             setupButtonKey(view, R.id.keyboard_button_forward_del);
 
             return view;
+        }
+
+        private void setupButtonKey(View rootView, int id)
+        {
+            final Button button = rootView.findViewById(id);
+            final String tag = (String)button.getTag();
+            final int keyCode = keyCodeFromTag(tag);
+            switch (keyCode)
+            {
+                case KeyEvent.KEYCODE_UNKNOWN:
+                    break;
+
+                case KeyEvent.KEYCODE_SHIFT_LEFT:
+                case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                    button.setOnTouchListener(new OnShiftKeyListener(keyCode));
+                    break;
+
+                case KeyEvent.KEYCODE_CTRL_LEFT:
+                case KeyEvent.KEYCODE_CTRL_RIGHT:
+                case KeyEvent.KEYCODE_ALT_LEFT:
+                case KeyEvent.KEYCODE_ALT_RIGHT:
+                    button.setOnTouchListener(new OnModifierKeyListener(keyCode));
+                    break;
+
+                default:
+                    button.setOnTouchListener(new OnKeyListener(keyCode));
+                    break;
+            }
         }
 
         public void setShiftOn(boolean on)
@@ -758,9 +745,9 @@ extends InputMethodService
             }
         };
 
-        public OnKeyListener(String tag)
+        public OnKeyListener(int keyCode)
         {
-            mKeyCode = keyCodeFromTag(tag);
+            mKeyCode = keyCode;
         }
 
         @Override
@@ -802,9 +789,9 @@ extends InputMethodService
         private final int mKeyCode;
         private boolean mKeyDown;
 
-        public OnModifierKeyListener(String tag)
+        public OnModifierKeyListener(int keyCode)
         {
-            mKeyCode = keyCodeFromTag(tag);
+            mKeyCode = keyCode;
         }
 
         @Override
@@ -844,9 +831,9 @@ extends InputMethodService
         private final int mKeyCode;
         private boolean mKeyDown;
 
-        public OnShiftKeyListener(String tag)
+        public OnShiftKeyListener(int keyCode)
         {
-            mKeyCode = keyCodeFromTag(tag);
+            mKeyCode = keyCode;
         }
 
         @Override
