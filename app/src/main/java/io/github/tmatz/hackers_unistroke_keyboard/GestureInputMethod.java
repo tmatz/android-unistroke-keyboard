@@ -595,7 +595,7 @@ implements IKeyboardService
                     flags = mFlags | GestureStore.FLAG_GESTURE_CONTROL;
                 }
 
-                if (mViewModel.isCtrlOn())
+                if (mViewModel.isCtrlOn() || mViewModel.isAltOn())
                 {
                     flags |= GestureStore.FLAG_STRICT;
                 }
