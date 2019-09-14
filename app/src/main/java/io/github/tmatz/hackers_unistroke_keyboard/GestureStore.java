@@ -1,12 +1,12 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
 import android.content.Context;
+import android.content.res.Resources;
+import android.gesture.Gesture;
 import android.gesture.GestureLibraries;
 import android.gesture.GestureLibrary;
-import android.gesture.Gesture;
-import java.util.ArrayList;
 import android.gesture.Prediction;
-import android.content.res.Resources;
+import java.util.ArrayList;
 
 class GestureStore
 {
