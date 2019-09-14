@@ -83,21 +83,25 @@ class GestureStore
 
         PredictionResult prediction = new PredictionResult(predictions.get(0), scale);
 
-        if ((flags & FLAG_STRICT) != 0)
+        if ((flags & FLAG_STRICT) == 0)
         {
-            if (prediction.score < 1.5)
-            {
-                return sPredictionFailed;
-            }
+            return prediction;
+        }
 
-            if (predictions.size() > 1)
-            {
-                PredictionResult next = new PredictionResult(predictions.get(1), scale);
-                if (prediction.score < next.score + 0.2)
-                {
-                    return sPredictionFailed;
-                }
-            }
+        if (prediction.score < 1.5)
+        {
+            return sPredictionFailed;
+        }
+
+        if (predictions.size() == 1)
+        {
+            return prediction;
+        }
+
+        PredictionResult next = new PredictionResult(predictions.get(1), scale);
+        if (prediction.score < next.score + 0.2)
+        {
+            return sPredictionFailed;
         }
 
         return prediction;
