@@ -15,6 +15,8 @@ class GestureStore
     public static final int FLAG_GESTURE_CONTROL = 8;
     public static final int FLAG_STRICT = 16;
 
+    private static final PredictionResult sPredictionFailed = new PredictionResult();
+
     private final float mPeriodTolerance;
     private final GestureLibrary mAlpabet;
     private final GestureLibrary mNumber;
@@ -40,68 +42,64 @@ class GestureStore
 
     public PredictionResult predict(Gesture gesture, int flags)
     {
-        PredictionResult prediction = new PredictionResult();
+        PredictionResult prediction = sPredictionFailed;
 
         if ((flags & FLAG_GESTURE_CONTROL) != 0)
         {
-            prediction = getPrediction(prediction, gesture, mControl, 0.7, flags);
+            prediction = prediction.choose(getPrediction(gesture, mControl, 0.7, flags));
         }
 
         if ((flags & FLAG_GESTURE_SPECIAL) != 0)
         {
-            prediction = getPrediction(prediction, gesture, mSpecial, 1.0, flags);
+            prediction = prediction.choose(getPrediction(gesture, mSpecial, 1.0, flags));
         }
 
         if ((flags & FLAG_GESTURE_ALPHABET) != 0)
         {
-            prediction = getPrediction(prediction, gesture, mAlpabet, 1.0, flags);
+            prediction = prediction.choose(getPrediction(gesture, mAlpabet, 1.0, flags));
         }
 
         if ((flags & FLAG_GESTURE_NUMBER) != 0)
         {
-            prediction = getPrediction(prediction, gesture, mNumber, 1.0, flags);
+            prediction = prediction.choose(getPrediction(gesture, mNumber, 1.0, flags));
         }
 
         return prediction;
     }
 
-    private PredictionResult getPrediction(PredictionResult previous, Gesture gesture, GestureLibrary store, double scale, int flags)
+    private PredictionResult getPrediction(Gesture gesture, GestureLibrary store, double scale, int flags)
     {
         ArrayList<Prediction> predictions = store.recognize(gesture);
         if (predictions.size() == 0)
         {
-            return previous;
+            return sPredictionFailed;
         }
 
         if (gesture.getLength() < mPeriodTolerance)
         {
-            return new PredictionResult("period", Double.NaN);
+            return new PredictionResult("period", Double.POSITIVE_INFINITY);
         }
 
-        PredictionResult current = new PredictionResult(predictions.get(0)).mult(scale);
-        if (previous.score > current.score)
-        {
-            return previous;
-        }
+        PredictionResult prediction = new PredictionResult(predictions.get(0)).mult(scale);
 
         if ((flags & FLAG_STRICT) != 0)
         {
-            if (current.score < 1.5)
+            if (prediction.score < 1.5)
             {
-                return previous;
+                return sPredictionFailed;
             }
 
             if (predictions.size() > 1)
             {
                 PredictionResult next = new PredictionResult(predictions.get(1)).mult(scale);
-                if (current.score < next.score + 0.2)
+                if (prediction.score < next.score + 0.2)
                 {
-                    return previous;
+                    return sPredictionFailed;
                 }
             }
         }
 
-        return current;
+        return prediction;
     }
 }
 

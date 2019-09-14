@@ -24,10 +24,15 @@ class PredictionResult
         this.name = prediction.name;
         this.score = prediction.score;
     }
-    
+
     public PredictionResult mult(double f)
     {
         return new PredictionResult(name, score * f);
+    }
+
+    public PredictionResult choose(PredictionResult other)
+    {
+        return (score > other.score) ? this : other;
     }
 }
 
