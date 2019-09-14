@@ -35,8 +35,9 @@ implements IKeyboardService
     private static final int VIBRATION_MS = 15;
     private static final int VIBRATION_STRONG_MS = 30;
 
+    private Resources mResources;
     private GestureStore mGestureStore;
-    private final ViewController mViewController = new ViewController();
+    private ViewController mViewController;
     private final KeyboardViewModel mViewModel = new KeyboardViewModel(this);
     private final Handler mHandler = new Handler();
 
@@ -44,7 +45,9 @@ implements IKeyboardService
     public void onCreate()
     {
         super.onCreate();
+        mResources = new Resources(getApplicationContext());
         mGestureStore = new GestureStore(getApplicationContext());
+        mViewController = new ViewController();
     }
 
     @Override
@@ -616,8 +619,6 @@ implements IKeyboardService
                 BACK_TO_MOVE,
             }
 
-            private final float mCursorTolerance = getResources().getDimension(R.dimen.cursor_tolerance);
-
             private State mState = State.SLEEP;
             private VectorF mBasePos = new VectorF();
             private float mMoveDistance;
@@ -714,7 +715,7 @@ implements IKeyboardService
                 mBasePos = pos;
                 mMoveDistance += length;
 
-                if (mMoveDistance > mCursorTolerance)
+                if (mMoveDistance > mResources.getCursorTolerance())
                 {
                     gotoSleep();
                 }
@@ -745,17 +746,18 @@ implements IKeyboardService
 
                 boolean isModifierOn = mViewModel.isCtrlOn() || mViewModel.isAltOn();
 
-                VectorF delta = VectorF.fromEvent(e).sub(mBasePos).cutoff(mCursorTolerance);
+                float cursorTolerance = mResources.getCursorTolerance();
+                VectorF delta = VectorF.fromEvent(e).sub(mBasePos).cutoff(cursorTolerance);
 
                 if (delta.x != 0)
                 {
                     mViewModel.key(delta.x < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
-                    mBasePos.x += Math.copySign(mCursorTolerance, delta.x);
+                    mBasePos.x += Math.copySign(cursorTolerance, delta.x);
                 }
                 else if (delta.y != 0)
                 {
                     mViewModel.key(delta.y < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-                    mBasePos.y += Math.copySign(mCursorTolerance, delta.y);
+                    mBasePos.y += Math.copySign(cursorTolerance, delta.y);
                 }
                 else
                 {

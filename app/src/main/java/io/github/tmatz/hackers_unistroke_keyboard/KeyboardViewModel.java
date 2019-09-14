@@ -11,8 +11,7 @@ class KeyboardViewModel
     private static final int META_ALT = KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON;
 
     private final IKeyboardService mService;
-    private final HashMap<Integer, KeyHandler> mKeyHandlers = new HashMap<>();
-    private final KeyHandler mDefaultKeyHandler;
+    private final KeyHandler mKeyHandler = new CompositeKeyHandler();
     private int mMetaState;
     private boolean mSpecialOn;
     private boolean mShiftUsed;
@@ -20,23 +19,6 @@ class KeyboardViewModel
     public KeyboardViewModel(IKeyboardService service)
     {
         mService = service;
-        mDefaultKeyHandler = new DefaultKeyHandler();
-        add(new KeyHandler(), KeyEvent.KEYCODE_UNKNOWN);
-        add(new CtrlKeyHandler(), KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.KEYCODE_CTRL_RIGHT);
-        add(new ShiftKeyHandler(), KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_SHIFT_RIGHT);
-        add(new AltKeyHandler(), KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.KEYCODE_ALT_RIGHT);
-        add(new EnterKeyHandler(), KeyEvent.KEYCODE_ENTER);
-        add(new PeriodKeyHandler(), KeyEvent.KEYCODE_PERIOD);
-        add(new DelKeyHandler(), KeyEvent.KEYCODE_DEL, KeyEvent.KEYCODE_FORWARD_DEL);
-        add(new DPadKeyHandler(), KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN);
-    }
-
-    private void add(KeyHandler handler, int ...keyCode)
-    {
-        for (int k: keyCode)
-        {
-            mKeyHandlers.put(k, handler);
-        }
     }
 
     public void clearState()
@@ -86,13 +68,13 @@ class KeyboardViewModel
 
     public void keyDown(int keyCode)
     {
-        mKeyHandlers.getOrDefault(keyCode, mDefaultKeyHandler).down(keyCode);
+        mKeyHandler.down(keyCode);
         mService.updateView();
     }
 
     public void keyUp(int keyCode)
     {
-        mKeyHandlers.getOrDefault(keyCode, mDefaultKeyHandler).up(keyCode);
+        mKeyHandler.up(keyCode);
         mService.updateView();
     }
 
@@ -144,187 +126,226 @@ class KeyboardViewModel
         }
     }
 
-    private class CtrlKeyHandler extends KeyHandler
+    private class CompositeKeyHandler extends KeyHandler
     {
+        private final HashMap<Integer, KeyHandler> mKeyHandlers = new HashMap<>();
+        private final KeyHandler mDefaultKeyHandler;
+
+        public CompositeKeyHandler()
+        {
+            mDefaultKeyHandler = new DefaultKeyHandler();
+            add(new KeyHandler(), KeyEvent.KEYCODE_UNKNOWN);
+            add(new CtrlKeyHandler(), KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.KEYCODE_CTRL_RIGHT);
+            add(new ShiftKeyHandler(), KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_SHIFT_RIGHT);
+            add(new AltKeyHandler(), KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.KEYCODE_ALT_RIGHT);
+            add(new EnterKeyHandler(), KeyEvent.KEYCODE_ENTER);
+            add(new PeriodKeyHandler(), KeyEvent.KEYCODE_PERIOD);
+            add(new DelKeyHandler(), KeyEvent.KEYCODE_DEL, KeyEvent.KEYCODE_FORWARD_DEL);
+            add(new DPadKeyHandler(), KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN);
+        }
+
+        private void add(KeyHandler handler, int ...keyCode)
+        {
+            for (int k: keyCode)
+            {
+                mKeyHandlers.put(k, handler);
+            }
+        }
+
         @Override
         public void down(int keyCode)
         {
-            mMetaState ^= META_CTRL;
+            mKeyHandlers.getOrDefault(keyCode, mDefaultKeyHandler).down(keyCode);
+        }
 
-            // clear used SHIFT
-            if (isShiftOn() && mShiftUsed)
+        @Override
+        public void up(int keyCode)
+        {
+            mKeyHandlers.getOrDefault(keyCode, mDefaultKeyHandler).up(keyCode);
+        }
+
+        private class CtrlKeyHandler extends KeyHandler
+        {
+            @Override
+            public void down(int keyCode)
             {
-                mMetaState &= ~META_SHIFT;
+                mMetaState ^= META_CTRL;
+
+                // clear used SHIFT
+                if (isShiftOn() && mShiftUsed)
+                {
+                    mMetaState &= ~META_SHIFT;
+                    mShiftUsed = false;
+                }
+            }
+
+            @Override
+            public void up(int keyCode)
+            {
+                mSpecialOn = false;
+            }
+        }
+
+        private class ShiftKeyHandler extends KeyHandler
+        {
+            @Override
+            public void down(int keyCode)
+            {
                 mShiftUsed = false;
+                if (isCapsLockOn())
+                {
+                    mMetaState &= ~META_CAPS_LOCK;
+                }
+                else if (isShiftOn())
+                {
+                    mMetaState &= ~META_SHIFT;
+                    mMetaState |= META_CAPS_LOCK;
+                }
+                else
+                {
+                    mMetaState |= META_SHIFT;
+                }
             }
-        }
 
-        @Override
-        public void up(int keyCode)
-        {
-            mSpecialOn = false;
-        }
-    }
-
-    private class ShiftKeyHandler extends KeyHandler
-    {
-        @Override
-        public void down(int keyCode)
-        {
-            mShiftUsed = false;
-            if (isCapsLockOn())
+            @Override
+            public void up(int keyCode)
             {
-                mMetaState &= ~META_CAPS_LOCK;
-            }
-            else if (isShiftOn())
-            {
-                mMetaState &= ~META_SHIFT;
-                mMetaState |= META_CAPS_LOCK;
-            }
-            else
-            {
-                mMetaState |= META_SHIFT;
+                mSpecialOn = false;
             }
         }
 
-        @Override
-        public void up(int keyCode)
+        private class AltKeyHandler extends KeyHandler
         {
-            mSpecialOn = false;
-        }
-    }
-
-    private class AltKeyHandler extends KeyHandler
-    {
-        @Override
-        public void down(int keyCode)
-        {
-            mMetaState ^= META_ALT;
-        }
-
-        @Override
-        public void up(int keyCode)
-        {
-            mSpecialOn = false;
-        }
-    }
-
-    private class EnterKeyHandler extends KeyHandler
-    {
-        @Override
-        public void down(int keyCode)
-        {
-            if (!mService.isEditorActionRequested())
+            @Override
+            public void down(int keyCode)
             {
-                mDefaultKeyHandler.down(keyCode);
+                mMetaState ^= META_ALT;
             }
-            else
+
+            @Override
+            public void up(int keyCode)
             {
-                mService.performEditorAction();
+                mSpecialOn = false;
             }
         }
 
-        @Override
-        public void up(int keyCode)
+        private class EnterKeyHandler extends KeyHandler
         {
-            if (!mService.isEditorActionRequested())
+            @Override
+            public void down(int keyCode)
             {
-                mDefaultKeyHandler.up(keyCode);
+                if (!mService.isEditorActionRequested())
+                {
+                    mDefaultKeyHandler.down(keyCode);
+                }
+                else
+                {
+                    mService.performEditorAction();
+                }
             }
-        }
-    }
 
-    private class PeriodKeyHandler extends KeyHandler
-    {
-        @Override
-        public void down(int keyCode)
-        {
-            if (isSpecialOn())
+            @Override
+            public void up(int keyCode)
             {
-                mDefaultKeyHandler.down(keyCode);
-            }
-        }
-
-        @Override
-        public void up(int keyCode)
-        {
-            if (isSpecialOn())
-            {
-                mDefaultKeyHandler.up(keyCode);
-            }
-            else
-            {
-                mSpecialOn = true;
-            }
-        }
-    }
-
-    private class DelKeyHandler extends KeyHandler
-    {
-        @Override
-        public void down(int keyCode)
-        {
-            if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
-            {
-                mDefaultKeyHandler.down(keyCode);
+                if (!mService.isEditorActionRequested())
+                {
+                    mDefaultKeyHandler.up(keyCode);
+                }
             }
         }
 
-        @Override
-        public void up(int keyCode)
+        private class PeriodKeyHandler extends KeyHandler
         {
-            if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
+            @Override
+            public void down(int keyCode)
             {
-                mDefaultKeyHandler.up(keyCode);
+                if (isSpecialOn())
+                {
+                    mDefaultKeyHandler.down(keyCode);
+                }
             }
 
-            mMetaState &= META_CAPS_LOCK;
-            mSpecialOn = false;
-        }
-    }
-
-    private class DPadKeyHandler extends KeyHandler
-    {
-        @Override
-        public void down(int keyCode)
-        {
-            sendKeyDown(keyCode);
-        }
-
-        @Override
-        public void up(int keyCode)
-        {
-            sendKeyUp(keyCode);
-            if (isCtrlOn() || isAltOn())
+            @Override
+            public void up(int keyCode)
             {
-                mMetaState &= ~(META_SHIFT | META_CTRL | META_ALT);
-            }
-            else
-            {
-                mMetaState &= ~(META_CTRL | META_ALT);
-            }
-            mSpecialOn = false;
-            if (isShiftOn())
-            {
-                mShiftUsed = true;
+                if (isSpecialOn())
+                {
+                    mDefaultKeyHandler.up(keyCode);
+                }
+                else
+                {
+                    mSpecialOn = true;
+                }
             }
         }
-    }
 
-    private class DefaultKeyHandler extends KeyHandler
-    {
-        @Override
-        public void down(int keyCode)
+        private class DelKeyHandler extends KeyHandler
         {
-            sendKeyDown(keyCode);
+            @Override
+            public void down(int keyCode)
+            {
+                if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
+                {
+                    mDefaultKeyHandler.down(keyCode);
+                }
+            }
+
+            @Override
+            public void up(int keyCode)
+            {
+                if (!isSpecialOn() && !isShiftOn() && !isCtrlOn() && !isAltOn())
+                {
+                    mDefaultKeyHandler.up(keyCode);
+                }
+
+                mMetaState &= META_CAPS_LOCK;
+                mSpecialOn = false;
+            }
         }
 
-        @Override
-        public void up(int keyCode)
+        private class DPadKeyHandler extends KeyHandler
         {
-            sendKeyUp(keyCode);
-            mMetaState &= META_CAPS_LOCK;
-            mSpecialOn = false;
+            @Override
+            public void down(int keyCode)
+            {
+                sendKeyDown(keyCode);
+            }
+
+            @Override
+            public void up(int keyCode)
+            {
+                sendKeyUp(keyCode);
+                if (isCtrlOn() || isAltOn())
+                {
+                    mMetaState &= ~(META_SHIFT | META_CTRL | META_ALT);
+                }
+                else
+                {
+                    mMetaState &= ~(META_CTRL | META_ALT);
+                }
+                mSpecialOn = false;
+                if (isShiftOn())
+                {
+                    mShiftUsed = true;
+                }
+            }
+        }
+
+        private class DefaultKeyHandler extends KeyHandler
+        {
+            @Override
+            public void down(int keyCode)
+            {
+                sendKeyDown(keyCode);
+            }
+
+            @Override
+            public void up(int keyCode)
+            {
+                sendKeyUp(keyCode);
+                mMetaState &= META_CAPS_LOCK;
+                mSpecialOn = false;
+            }
         }
     }
 }
