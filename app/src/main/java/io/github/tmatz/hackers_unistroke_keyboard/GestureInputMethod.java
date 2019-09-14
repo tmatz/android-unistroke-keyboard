@@ -155,7 +155,7 @@ extends InputMethodService
     private boolean vibrate()
     {
         Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
-        if (vibrator == null)
+        if (vibrator == null || !vibrator.hasVibrator())
         {
             return false;
         }
@@ -166,7 +166,7 @@ extends InputMethodService
     private boolean vibrateStrong()
     {
         Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
-        if (vibrator == null)
+        if (vibrator == null || !vibrator.hasVibrator())
         {
             return false;
         }
