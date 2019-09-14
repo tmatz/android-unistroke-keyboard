@@ -38,11 +38,7 @@ extends InputMethodService
     private static final int META_CTRL = KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON;
     private static final int META_ALT = KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON;
 
-    private GestureLibrary mStoreAlpabet;
-    private GestureLibrary mStoreNumber;
-    private GestureLibrary mStoreSpecial;
-    private GestureLibrary mStoreControl;
-
+    private final GestureStore mGestureStore = new GestureStore();
     private final ViewController mViewController = new ViewController();
     private final KeyboardController mKeyboardController = new KeyboardController();
     private final Handler mHandler = new Handler();
@@ -51,11 +47,7 @@ extends InputMethodService
     public void onCreate()
     {
         super.onCreate();
-
-        mStoreAlpabet = createGesture(this, R.raw.gestures_alphabet);
-        mStoreNumber = createGesture(this, R.raw.gestures_number);
-        mStoreSpecial = createGesture(this, R.raw.gestures_special);
-        mStoreControl = createGesture(this, R.raw.gestures_control);
+        mGestureStore.onCreate();
     }
 
     @Override
@@ -116,15 +108,6 @@ extends InputMethodService
         }
     }
 
-    private static GestureLibrary createGesture(Context context, int rawId)
-    {
-        GestureLibrary store = GestureLibraries.fromRawResource(context, rawId);
-        store.setOrientationStyle(8);
-
-        store.load();
-        return store;
-    }
-
     private void sendEvent(KeyEvent e)
     {
         getCurrentInputConnection().sendKeyEvent(e);
@@ -174,6 +157,31 @@ extends InputMethodService
         return true;
     }
 
+    private class GestureStore
+    {
+        private GestureLibrary mStoreAlpabet;
+        private GestureLibrary mStoreNumber;
+        private GestureLibrary mStoreSpecial;
+        private GestureLibrary mStoreControl;
+
+        public void onCreate()
+        {
+            mStoreAlpabet = createGesture(R.raw.gestures_alphabet);
+            mStoreNumber = createGesture(R.raw.gestures_number);
+            mStoreSpecial = createGesture(R.raw.gestures_special);
+            mStoreControl = createGesture(R.raw.gestures_control);
+        }
+
+        private GestureLibrary createGesture(int rawId)
+        {
+            GestureLibrary store = GestureLibraries.fromRawResource(getApplicationContext(), rawId);
+            store.setOrientationStyle(8);
+
+            store.load();
+            return store;
+        }
+    }
+
     private class ViewController
     {
         private ViewGroup mCenterPanel;
@@ -187,7 +195,7 @@ extends InputMethodService
         public View onCreateInputView()
         {
             final View mainView = getLayoutInflater().inflate(R.layout.input_method, null);
-            
+
             final ViewGroup keyboardArea = mainView.findViewById(R.id.keyboard_area);
             final View keyboardView = getLayoutInflater().inflate(R.layout.keyboard, keyboardArea);
 
@@ -197,7 +205,7 @@ extends InputMethodService
             setupMainView(mainView);
             setupKeyboardView(keyboardView);
             setupExtendKey(extendKey, gestureArea, keyboardArea);
-            
+
             return mainView;
         }
 
@@ -244,7 +252,7 @@ extends InputMethodService
             final GestureOverlayView overlayNum = view.findViewById(R.id.gestures_overlay_num);
 
             overlay.addOnGestureListener(
-                new OnGestureUnistrokeListener(mStoreAlpabet)
+                new OnGestureUnistrokeListener(mGestureStore.mStoreAlpabet)
                 {
                     @Override
                     public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
@@ -255,7 +263,7 @@ extends InputMethodService
                 });
 
             overlayNum.addOnGestureListener(
-                new OnGestureUnistrokeListener(mStoreNumber)
+                new OnGestureUnistrokeListener(mGestureStore.mStoreNumber)
                 {
                     @Override
                     public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
@@ -902,11 +910,11 @@ extends InputMethodService
 
             if (mKeyboardController.isSpecialOn())
             {
-                prediction = getPrediction(prediction, gesture, mStoreSpecial, 1.0);
+                prediction = getPrediction(prediction, gesture, mGestureStore.mStoreSpecial, 1.0);
             }
             else
             {
-                prediction = getPrediction(prediction, gesture, mStoreControl, 0.7);
+                prediction = getPrediction(prediction, gesture, mGestureStore.mStoreControl, 0.7);
                 prediction = getPrediction(prediction, gesture, mMainStore, 1.0);
             }
 
