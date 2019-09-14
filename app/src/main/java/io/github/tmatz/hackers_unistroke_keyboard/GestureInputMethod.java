@@ -1,6 +1,5 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
-import android.content.res.Resources;
 import android.gesture.Gesture;
 import android.gesture.GestureOverlayView;
 import android.graphics.RectF;
@@ -29,8 +28,7 @@ implements IKeyboardService
     private static final int VIBRATION_MS = 15;
     private static final int VIBRATION_STRONG_MS = 30;
 
-    private Resources mResources;
-    private GestureStore mGestureStore;
+    private ApplicationResources mResources;
     private ViewController mViewController;
     private final KeyboardViewModel mViewModel = new KeyboardViewModel(this);
     private final Handler mHandler = new Handler();
@@ -39,8 +37,7 @@ implements IKeyboardService
     public void onCreate()
     {
         super.onCreate();
-        mResources = getApplicationContext().getResources();
-        mGestureStore = new GestureStore(getApplicationContext());
+        mResources = new ApplicationResources(getApplicationContext());
         mViewController = new ViewController();
     }
 
@@ -131,11 +128,6 @@ implements IKeyboardService
         getCurrentInputConnection().sendKeyEvent(event);
     }
 
-    private int keyCodeFromTag(String tag)
-    {
-        return KeyEvent.keyCodeFromString("KEYCODE_" + tag.toUpperCase());
-    }
-
     private boolean vibrate(boolean strong)
     {
         Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
@@ -145,6 +137,14 @@ implements IKeyboardService
         }
         vibrator.vibrate(strong ? VIBRATION_STRONG_MS : VIBRATION_MS);
         return true;
+    }
+
+    private static class KeyEventUtils
+    {
+        public static int keyCodeFromTag(String tag)
+        {
+            return KeyEvent.keyCodeFromString("KEYCODE_" + tag.toUpperCase());
+        }
     }
 
     private class ViewController
@@ -226,7 +226,7 @@ implements IKeyboardService
                 });
 
             overlayNum.addOnGestureListener(
-                new OnGestureUnistrokeListener(mGestureStore.FLAG_GESTURE_NUMBER)
+                new OnGestureUnistrokeListener(GestureStore.FLAG_GESTURE_NUMBER)
                 {
                     @Override
                     public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
@@ -236,7 +236,7 @@ implements IKeyboardService
                     }
                 });
 
-            final OnTouchCursorGestureListener onTouchCursorGestureListener =                 new OnTouchCursorGestureListener()
+            final OnTouchCursorGestureListener onTouchCursorGestureListener = new OnTouchCursorGestureListener()
             {
                 @Override
                 protected void onRunStart()
@@ -285,7 +285,7 @@ implements IKeyboardService
         {
             final Button button = rootView.findViewById(id);
             final String tag = (String)button.getTag();
-            final int keyCode = keyCodeFromTag(tag);
+            final int keyCode = KeyEventUtils.keyCodeFromTag(tag);
             switch (keyCode)
             {
                 case KeyEvent.KEYCODE_UNKNOWN:
@@ -550,7 +550,7 @@ implements IKeyboardService
             public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
             {
                 Gesture gesture = overlay.getGesture();
-                PredictionResult prediction = mGestureStore.predict(gesture, makeFlags());
+                PredictionResult prediction = mResources.GestureStore.predict(gesture, makeFlags());
                 if (prediction.score == 0)
                 {
                     vibrate(true);
@@ -558,7 +558,7 @@ implements IKeyboardService
                 }
 
                 String name = prediction.name;
-                int keyCode = keyCodeFromTag(name);
+                int keyCode = KeyEventUtils.keyCodeFromTag(name);
                 if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
                 {
                     mViewModel.sendText(name);
@@ -698,7 +698,7 @@ implements IKeyboardService
                 mBasePos = pos;
                 mMoveDistance += length;
 
-                if (mMoveDistance > mResources.getDimension(R.dimen.cursor_tolerance))
+                if (mMoveDistance > mResources.getCursorTolerance())
                 {
                     gotoSleep();
                 }
@@ -729,7 +729,7 @@ implements IKeyboardService
 
                 boolean isModifierOn = mViewModel.isCtrlOn() || mViewModel.isAltOn();
 
-                float cursorTolerance = mResources.getDimension(R.dimen.cursor_tolerance);
+                float cursorTolerance = mResources.getCursorTolerance();
                 VectorF delta = VectorF.fromEvent(e).sub(mBasePos).cutoff(cursorTolerance);
 
                 if (delta.x != 0)

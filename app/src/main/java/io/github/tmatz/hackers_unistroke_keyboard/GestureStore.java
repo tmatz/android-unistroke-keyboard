@@ -18,15 +18,15 @@ class GestureStore
 
     private static final PredictionResult sPredictionFailed = new PredictionResult();
 
-    private final Resources mResources;
+    private final ApplicationResources mResources;
     private final GestureLibrary mAlpabet;
     private final GestureLibrary mNumber;
     private final GestureLibrary mSpecial;
     private final GestureLibrary mControl;
 
-    public GestureStore(Context context)
+    public GestureStore(Context context, ApplicationResources resources)
     {
-        mResources = context.getResources();
+        mResources = resources;
         mAlpabet = createGesture(context, R.raw.gestures_alphabet);
         mNumber = createGesture(context, R.raw.gestures_number);
         mSpecial = createGesture(context, R.raw.gestures_special);
@@ -76,7 +76,7 @@ class GestureStore
             return sPredictionFailed;
         }
 
-        if (gesture.getLength() < mResources.getDimension(R.dimen.period_tolerance))
+        if (gesture.getLength() < mResources.getPeriodTolerance())
         {
             return new PredictionResult("period", Double.POSITIVE_INFINITY);
         }
