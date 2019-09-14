@@ -217,7 +217,7 @@ extends InputMethodService
         public View onCreateInputView()
         {
             final View view = getLayoutInflater().inflate(R.layout.input_method, null);
-            final View keyboardView = getLayoutInflater().inflate(R.layout.keyboard, null);
+            final View keyboardView = createKeyboardView();
 
             mGestureArea = view.findViewById(R.id.gesture_area);
             final View unistrokeArea = view.findViewById(R.id.unistroke_area);
@@ -231,10 +231,22 @@ extends InputMethodService
             final Button extendKey = view.findViewById(R.id.button_key);
 
             mInfoCurrent = mInfo;
-
             mGestureArea.addView(keyboardView);
             keyboardView.setVisibility(View.INVISIBLE);
-            
+
+            setupGestureOverlay(overlay, overlayNum);
+            setupButtonKey(view, R.id.button_shift);
+            setupButtonKey(view, R.id.button_ctrl);
+            setupButtonKey(view, R.id.button_alt);
+            setupButtonKey(view, R.id.button_del);
+            setupButtonKey(view, R.id.button_enter);
+            setupExtendKey(extendKey, unistrokeArea, keyboardView);
+
+            return view;
+        }
+
+        private void setupGestureOverlay(final GestureOverlayView overlay, final GestureOverlayView overlayNum)
+        {
             overlay.addOnGestureListener(
                 new OnGestureUnistrokeListener(mStoreAlpabet)
                 {
@@ -282,13 +294,10 @@ extends InputMethodService
                         super.onRunStart();
                     }
                 });
+        }
 
-            setupButtonKey(view, R.id.button_shift);
-            setupButtonKey(view, R.id.button_ctrl);
-            setupButtonKey(view, R.id.button_alt);
-            setupButtonKey(view, R.id.button_del);
-            setupButtonKey(view, R.id.button_enter);
-
+        private void setupExtendKey(final Button extendKey, final View unistrokeArea, final View keyboardView)
+        {
             extendKey.setOnClickListener(
                 new OnClickListener()
                 {
@@ -312,22 +321,27 @@ extends InputMethodService
                         }
                     }
                 });
+        }
 
-            setupButtonKey(keyboardView, R.id.keyboard_button_h);
-            setupButtonKey(keyboardView, R.id.keyboard_button_j);
-            setupButtonKey(keyboardView, R.id.keyboard_button_k);
-            setupButtonKey(keyboardView, R.id.keyboard_button_l);
-            setupButtonKey(keyboardView, R.id.keyboard_button_z);
-            setupButtonKey(keyboardView, R.id.keyboard_button_x);
-            setupButtonKey(keyboardView, R.id.keyboard_button_c);
-            setupButtonKey(keyboardView, R.id.keyboard_button_v);
-            setupButtonKey(keyboardView, R.id.keyboard_button_home);
-            setupButtonKey(keyboardView, R.id.keyboard_button_move_end);
-            setupButtonKey(keyboardView, R.id.keyboard_button_dpad_left);
-            setupButtonKey(keyboardView, R.id.keyboard_button_dpad_right);
-            setupButtonKey(keyboardView, R.id.keyboard_button_dpad_up);
-            setupButtonKey(keyboardView, R.id.keyboard_button_dpad_down);
-            setupButtonKey(keyboardView, R.id.keyboard_button_forward_del);
+        private View createKeyboardView()
+        {
+            final View view = getLayoutInflater().inflate(R.layout.keyboard, null);
+
+            setupButtonKey(view, R.id.keyboard_button_h);
+            setupButtonKey(view, R.id.keyboard_button_j);
+            setupButtonKey(view, R.id.keyboard_button_k);
+            setupButtonKey(view, R.id.keyboard_button_l);
+            setupButtonKey(view, R.id.keyboard_button_z);
+            setupButtonKey(view, R.id.keyboard_button_x);
+            setupButtonKey(view, R.id.keyboard_button_c);
+            setupButtonKey(view, R.id.keyboard_button_v);
+            setupButtonKey(view, R.id.keyboard_button_home);
+            setupButtonKey(view, R.id.keyboard_button_move_end);
+            setupButtonKey(view, R.id.keyboard_button_dpad_left);
+            setupButtonKey(view, R.id.keyboard_button_dpad_right);
+            setupButtonKey(view, R.id.keyboard_button_dpad_up);
+            setupButtonKey(view, R.id.keyboard_button_dpad_down);
+            setupButtonKey(view, R.id.keyboard_button_forward_del);
 
             return view;
         }
