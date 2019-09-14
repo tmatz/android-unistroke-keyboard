@@ -1,17 +1,13 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
-import android.content.Context;
+import android.content.res.Resources;
 import android.gesture.Gesture;
-import android.gesture.GestureLibraries;
-import android.gesture.GestureLibrary;
 import android.gesture.GestureOverlayView;
-import android.gesture.Prediction;
 import android.graphics.RectF;
 import android.inputmethodservice.InputMethodService;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.os.Vibrator;
-import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,8 +18,6 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-import java.util.ArrayList;
-import java.util.HashMap;
 
 public class GestureInputMethod
 extends InputMethodService
@@ -45,7 +39,7 @@ implements IKeyboardService
     public void onCreate()
     {
         super.onCreate();
-        mResources = new Resources(getApplicationContext());
+        mResources = getApplicationContext().getResources();
         mGestureStore = new GestureStore(getApplicationContext());
         mViewController = new ViewController();
     }
@@ -715,7 +709,7 @@ implements IKeyboardService
                 mBasePos = pos;
                 mMoveDistance += length;
 
-                if (mMoveDistance > mResources.getCursorTolerance())
+                if (mMoveDistance > mResources.getDimension(R.dimen.cursor_tolerance))
                 {
                     gotoSleep();
                 }
@@ -746,7 +740,7 @@ implements IKeyboardService
 
                 boolean isModifierOn = mViewModel.isCtrlOn() || mViewModel.isAltOn();
 
-                float cursorTolerance = mResources.getCursorTolerance();
+                float cursorTolerance = mResources.getDimension(R.dimen.cursor_tolerance);
                 VectorF delta = VectorF.fromEvent(e).sub(mBasePos).cutoff(cursorTolerance);
 
                 if (delta.x != 0)

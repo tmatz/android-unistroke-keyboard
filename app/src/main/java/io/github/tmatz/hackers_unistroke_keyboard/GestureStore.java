@@ -6,6 +6,7 @@ import android.gesture.GestureLibrary;
 import android.gesture.Gesture;
 import java.util.ArrayList;
 import android.gesture.Prediction;
+import android.content.res.Resources;
 
 class GestureStore
 {
@@ -17,7 +18,7 @@ class GestureStore
 
     private static final PredictionResult sPredictionFailed = new PredictionResult();
 
-    private final float mPeriodTolerance;
+    private final Resources mResources;
     private final GestureLibrary mAlpabet;
     private final GestureLibrary mNumber;
     private final GestureLibrary mSpecial;
@@ -25,7 +26,7 @@ class GestureStore
 
     public GestureStore(Context context)
     {
-        mPeriodTolerance = context.getResources().getDimension(R.dimen.period_tolerance);    
+        mResources = context.getResources();
         mAlpabet = createGesture(context, R.raw.gestures_alphabet);
         mNumber = createGesture(context, R.raw.gestures_number);
         mSpecial = createGesture(context, R.raw.gestures_special);
@@ -75,7 +76,7 @@ class GestureStore
             return sPredictionFailed;
         }
 
-        if (gesture.getLength() < mPeriodTolerance)
+        if (gesture.getLength() < mResources.getDimension(R.dimen.period_tolerance))
         {
             return new PredictionResult("period", Double.POSITIVE_INFINITY);
         }
