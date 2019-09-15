@@ -22,7 +22,6 @@ public class GestureInputMethod
 extends InputMethodService
 implements IKeyboardService
 {
-    private static final int CURSOR_GESTURE_START_MS = 300;
     private static final int KEYREPEAT_DELAY_FIRST_MS = 400;
     private static final int KEYREPEAT_DELAY_MS = 100;
     private static final int VIBRATION_MS = 15;
@@ -236,11 +235,42 @@ implements IKeyboardService
                     }
                 });
 
-            final OnTouchCursorGestureListener onTouchCursorGestureListener = new OnTouchCursorGestureListener()
+            final OnTouchCursorGestureListener onTouchCursorGestureListener = new OnTouchCursorGestureListener(mResources)
             {
+                @Override
+                protected boolean isSpecialOn()
+                {
+                    return mViewModel.isSpecialOn();
+                }
+
+                @Override
+                protected boolean isModifierOn()
+                {
+                    return mViewModel.isCtrlOn() || mViewModel.isAltOn();
+                }
+
+                @Override
+                protected void key(int keyCode)
+                {
+                    mViewModel.key(keyCode);
+                }
+
+                @Override
+                protected RectF getBounds()
+                {
+                    return getCenterRect();
+                }
+
                 @Override
                 protected void onRunStart()
                 {
+                    mViewController.update();
+
+                    if (!vibrate(false))
+                    {
+                        Toast.makeText(GestureInputMethod.this, "cursor mode", Toast.LENGTH_SHORT).show();
+                    }
+
                     overlay.clear(false);
                     overlayNum.clear(false);
 
@@ -335,22 +365,9 @@ implements IKeyboardService
             mInfoView.setNumberActive();
         }
 
-        public RectF getViewRect(View view)
-        {
-            int[] location = new int[2];
-            view.getLocationOnScreen(location);
-
-            int x = location[0];
-            int y = location[1];
-            int w = view.getWidth();
-            int h = view.getHeight();
-
-            return new RectF(x, y, x + w, y + h);
-        }
-
         public RectF getCenterRect()
         {
-            return getViewRect(mCenterPanel);
+            return ViewUtils.getViewRect(mCenterPanel);
         }
 
         private class InfoView
@@ -416,7 +433,7 @@ implements IKeyboardService
             @Override
             public boolean onTouch(View v, MotionEvent e)
             {
-                RectF rect = mViewController.getViewRect(v);
+                RectF rect = ViewUtils.getViewRect(v);
                 switch (e.getAction())
                 {
                     case MotionEvent.ACTION_DOWN:
@@ -460,7 +477,7 @@ implements IKeyboardService
             @Override
             public boolean onTouch(View v, MotionEvent e)
             {
-                RectF rect = mViewController.getViewRect(v);
+                RectF rect = ViewUtils.getViewRect(v);
                 switch (e.getAction())
                 {
                     case MotionEvent.ACTION_DOWN:
@@ -504,7 +521,7 @@ implements IKeyboardService
             public boolean onTouch(View v, MotionEvent e)
             {
 
-                RectF rect = mViewController.getViewRect(v);
+                RectF rect = ViewUtils.getViewRect(v);
                 switch (e.getAction())
                 {
                     case MotionEvent.ACTION_DOWN:
@@ -587,232 +604,6 @@ implements IKeyboardService
                 }
 
                 return flags;
-            }
-        }
-
-        private abstract class OnTouchCursorGestureListener
-        implements OnTouchListener
-        {
-            private enum State
-            {
-                SLEEP,
-                START,
-                MOVE,
-                REPEAT,
-                BACK_TO_MOVE,
-            }
-
-            private State mState = State.SLEEP;
-            private VectorF mBasePos = new VectorF();
-            private float mMoveDistance;
-            private MotionEvent mLastEvent;
-
-            private final Runnable mRunnable = new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    switch (mState)
-                    {
-                        case START:
-                            onRunStart();
-                            break;
-
-                        case REPEAT:
-                            onRunRepeat();
-                            break;
-
-                        case BACK_TO_MOVE:
-                            onRunBackToMove();
-                            break;
-
-                        default:
-                            break;
-                    }
-                }
-            };
-
-            @Override
-            public boolean onTouch(View v, MotionEvent e)
-            {
-                switch (e.getAction())
-                {
-                    case MotionEvent.ACTION_DOWN:
-                        onTouchDown(e);
-                        break;
-
-                    case MotionEvent.ACTION_MOVE:
-                        switch (mState)
-                        {
-                            case START:
-                                onTouchMoveStart(e);
-                                break;
-
-                            case MOVE:
-                                onTouchMoveMove(e);
-                                break;
-
-                            case REPEAT:
-                                onTouchMoveRepeat(e);
-                                break;
-
-                            case BACK_TO_MOVE:
-                                onTouchMoveBackToMove(e);
-                                break;
-
-                            default:
-                                break;
-                        }
-                        break;
-
-                    case MotionEvent.ACTION_UP:
-                        onTouchUp(e);
-                        break;
-
-                    default:
-                        break;
-                }
-
-                return true;
-            }
-
-            protected void onTouchDown(MotionEvent e)
-            {
-                if (mViewModel.isSpecialOn())
-                {
-                    return;
-                }
-
-                mState = State.START;
-                mLastEvent = e;
-                mBasePos = VectorF.fromEvent(e);
-                mMoveDistance = 0;
-                mHandler.postDelayed(mRunnable, CURSOR_GESTURE_START_MS);
-            }
-
-            protected void onTouchMoveStart(MotionEvent e)
-            {
-                mLastEvent = e;
-                VectorF pos = VectorF.fromEvent(e);
-                float length = pos.sub(mBasePos).fastLength();
-                mBasePos = pos;
-                mMoveDistance += length;
-
-                if (mMoveDistance > mResources.getCursorTolerance())
-                {
-                    gotoSleep();
-                }
-            }
-
-            protected void onRunStart()
-            {
-                mViewController.update();
-
-                if (!vibrate(false))
-                {
-                    Toast.makeText(GestureInputMethod.this, "cursor mode", Toast.LENGTH_SHORT).show();
-                }
-
-                mState = State.MOVE;
-            }
-
-            protected void onTouchMoveMove(MotionEvent e)
-            {
-                mLastEvent = e;
-
-                if (!isInGestureArea(e) && !mViewModel.isCtrlOn() && !mViewModel.isAltOn())
-                {
-                    mState = State.REPEAT;
-                    mHandler.postDelayed(mRunnable, 100);
-                    return;
-                }
-
-                boolean isModifierOn = mViewModel.isCtrlOn() || mViewModel.isAltOn();
-
-                float cursorTolerance = mResources.getCursorTolerance();
-                VectorF delta = VectorF.fromEvent(e).sub(mBasePos).cutoff(cursorTolerance);
-
-                if (delta.x != 0)
-                {
-                    mViewModel.key(delta.x < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
-                    mBasePos.x += Math.copySign(cursorTolerance, delta.x);
-                }
-                else if (delta.y != 0)
-                {
-                    mViewModel.key(delta.y < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-                    mBasePos.y += Math.copySign(cursorTolerance, delta.y);
-                }
-                else
-                {
-                    return;
-                }
-
-                if (isModifierOn)
-                {
-                    gotoSleep();
-                }
-            }
-
-            protected void onTouchMoveRepeat(MotionEvent e)
-            {
-                mLastEvent = e;
-
-                if (isInGestureArea(e))
-                {
-                    mState = State.BACK_TO_MOVE;
-                    mHandler.removeCallbacks(mRunnable);
-                    mHandler.postDelayed(mRunnable, 200);
-                }
-            }
-
-            protected void onRunRepeat()
-            {
-                RectF centerRect = mViewController.getCenterRect();
-                VectorF pos = VectorF.fromEvent(mLastEvent);
-
-                if (!centerRect.contains(pos.x, centerRect.top))
-                {
-                    mViewModel.key(pos.x < centerRect.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
-                }
-                else if (!centerRect.contains(centerRect.left, pos.y))
-                {
-                    mViewModel.key(pos.y < centerRect.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-                }
-
-                if (mViewModel.isCtrlOn() || mViewModel.isAltOn())
-                {
-                    gotoSleep();
-                }
-
-                mHandler.postDelayed(mRunnable, 100);
-            }
-
-            protected void onTouchMoveBackToMove(MotionEvent e)
-            {
-                mLastEvent = e;
-            }
-
-            protected void onRunBackToMove()
-            {
-                mState = State.MOVE;
-                mBasePos = VectorF.fromEvent(mLastEvent);
-            }
-
-            protected void onTouchUp(MotionEvent e)
-            {
-                gotoSleep();
-            }
-
-            private void gotoSleep()
-            {
-                mState = State.SLEEP;
-                mHandler.removeCallbacks(mRunnable);
-                mLastEvent = null;
-            }
-
-            private boolean isInGestureArea(MotionEvent e)
-            {
-                return mViewController.getCenterRect().contains(e.getRawX(), e.getRawY());
             }
         }
     }
