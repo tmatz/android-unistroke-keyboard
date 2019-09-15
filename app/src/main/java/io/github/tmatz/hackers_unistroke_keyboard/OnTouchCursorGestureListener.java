@@ -10,27 +10,60 @@ import android.view.View.OnTouchListener;
 abstract class OnTouchCursorGestureListener
 implements OnTouchListener
 {
-    private static final int CURSOR_GESTURE_START_MS = 300;
+    protected final ApplicationResources resources;
+    private final Handler mHandler = new Handler();
+    private final StateMachine stateMachine = new StateMachine();
 
-    private enum State
+    public OnTouchCursorGestureListener(ApplicationResources resources)
     {
-        SLEEP,
-        START,
-        MOVE,
-        REPEAT,
-        BACK_TO_MOVE,
+        this.resources = resources;
     }
 
-    protected final ApplicationResources resources;
+    protected abstract boolean isSpecialOn()
 
-    private State mState = State.SLEEP;
-    private VectorF mBasePos = new VectorF();
-    private float mMoveDistance;
-    private MotionEvent mLastEvent;
-    private final Handler mHandler = new Handler();
+    protected abstract boolean isModifierOn()
 
-    private final Runnable mRunnable = new Runnable()
+    protected abstract RectF getBounds()
+
+    protected void onStart()
     {
+        // override
+    }
+
+    protected void onFinish()
+    {
+        // override
+    }
+
+    protected void onKey(int keyCode)
+    {
+        // override
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent e)
+    {
+        return stateMachine.onTouch(v, e);
+    }
+
+    private class StateMachine implements Runnable
+    {
+        private static final int CURSOR_GESTURE_START_MS = 300;
+
+        private enum State
+        {
+            SLEEP,
+            START,
+            MOVE,
+            REPEAT,
+            BACK_TO_MOVE,
+        }
+
+        private State mState = State.SLEEP;
+        private VectorF mBasePos = new VectorF();
+        private float mMoveDistance;
+        private MotionEvent mLastEvent;
+
         @Override
         public void run()
         {
@@ -52,194 +85,185 @@ implements OnTouchListener
                     break;
             }
         }
-    };
 
-    public OnTouchCursorGestureListener(ApplicationResources resources)
-    {
-        this.resources = resources;
-    }
-
-    protected abstract boolean isSpecialOn();
-
-    protected abstract boolean isModifierOn()
-
-    protected abstract void key(int keyCode)
-
-    protected abstract RectF getBounds();
-    
-    @Override
-    public boolean onTouch(View v, MotionEvent e)
-    {
-        switch (e.getAction())
+        public boolean onTouch(View v, MotionEvent e)
         {
-            case MotionEvent.ACTION_DOWN:
-                onTouchDown(e);
-                break;
+            switch (e.getAction())
+            {
+                case MotionEvent.ACTION_DOWN:
+                    onTouchDown(e);
+                    break;
 
-            case MotionEvent.ACTION_MOVE:
-                switch (mState)
-                {
-                    case START:
-                        onTouchMoveStart(e);
-                        break;
+                case MotionEvent.ACTION_MOVE:
+                    switch (mState)
+                    {
+                        case START:
+                            onTouchMoveStart(e);
+                            break;
 
-                    case MOVE:
-                        onTouchMoveMove(e);
-                        break;
+                        case MOVE:
+                            onTouchMoveMove(e);
+                            break;
 
-                    case REPEAT:
-                        onTouchMoveRepeat(e);
-                        break;
+                        case REPEAT:
+                            onTouchMoveRepeat(e);
+                            break;
 
-                    case BACK_TO_MOVE:
-                        onTouchMoveBackToMove(e);
-                        break;
+                        case BACK_TO_MOVE:
+                            onTouchMoveBackToMove(e);
+                            break;
 
-                    default:
-                        break;
-                }
-                break;
+                        default:
+                            break;
+                    }
+                    break;
 
-            case MotionEvent.ACTION_UP:
-                onTouchUp(e);
-                break;
+                case MotionEvent.ACTION_UP:
+                    onTouchUp(e);
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
+            }
+
+            return true;
         }
 
-        return true;
-    }
-
-    protected void onTouchDown(MotionEvent e)
-    {
-        if (isSpecialOn())
+        protected void onTouchDown(MotionEvent e)
         {
-            return;
+            if (isSpecialOn())
+            {
+                return;
+            }
+
+            mState = State.START;
+            mLastEvent = e;
+            mBasePos = VectorF.fromEvent(e);
+            mMoveDistance = 0;
+            mHandler.postDelayed(this, CURSOR_GESTURE_START_MS);
         }
 
-        mState = State.START;
-        mLastEvent = e;
-        mBasePos = VectorF.fromEvent(e);
-        mMoveDistance = 0;
-        mHandler.postDelayed(mRunnable, CURSOR_GESTURE_START_MS);
-    }
+        protected void onTouchMoveStart(MotionEvent e)
+        {
+            mLastEvent = e;
+            VectorF pos = VectorF.fromEvent(e);
+            float length = pos.sub(mBasePos).fastLength();
+            mBasePos = pos;
+            mMoveDistance += length;
 
-    protected void onTouchMoveStart(MotionEvent e)
-    {
-        mLastEvent = e;
-        VectorF pos = VectorF.fromEvent(e);
-        float length = pos.sub(mBasePos).fastLength();
-        mBasePos = pos;
-        mMoveDistance += length;
+            if (mMoveDistance > resources.getCursorTolerance())
+            {
+                gotoSleep();
+            }
+        }
 
-        if (mMoveDistance > resources.getCursorTolerance())
+        protected void onRunStart()
+        {
+            onStart();
+            mState = State.MOVE;
+        }
+
+        protected void onTouchMoveMove(MotionEvent e)
+        {
+            mLastEvent = e;
+
+            boolean isModifierOn = isModifierOn();
+
+            if (!isInGestureArea(e) && !isModifierOn)
+            {
+                mState = State.REPEAT;
+                mHandler.postDelayed(this, 100);
+                return;
+            }
+
+            float cursorTolerance = resources.getCursorTolerance();
+            VectorF delta = VectorF.fromEvent(e).sub(mBasePos).cutoff(cursorTolerance);
+
+            if (delta.x != 0)
+            {
+                onKey(delta.x < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+                mBasePos.x += Math.copySign(cursorTolerance, delta.x);
+            }
+            else if (delta.y != 0)
+            {
+                onKey(delta.y < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+                mBasePos.y += Math.copySign(cursorTolerance, delta.y);
+            }
+            else
+            {
+                return;
+            }
+
+            if (isModifierOn)
+            {
+                gotoSleep();
+            }
+        }
+
+        protected void onTouchMoveRepeat(MotionEvent e)
+        {
+            mLastEvent = e;
+
+            if (isInGestureArea(e))
+            {
+                mState = State.BACK_TO_MOVE;
+                mHandler.removeCallbacks(this);
+                mHandler.postDelayed(this, 200);
+            }
+        }
+
+        protected void onRunRepeat()
+        {
+            RectF bounds = getBounds();
+            VectorF pos = VectorF.fromEvent(mLastEvent);
+
+            if (!bounds.contains(pos.x, bounds.top))
+            {
+                onKey(pos.x < bounds.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
+            }
+            else if (!bounds.contains(bounds.left, pos.y))
+            {
+                onKey(pos.y < bounds.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
+            }
+
+            if (isModifierOn())
+            {
+                gotoSleep();
+            }
+
+            mHandler.postDelayed(this, 100);
+        }
+
+        protected void onTouchMoveBackToMove(MotionEvent e)
+        {
+            mLastEvent = e;
+        }
+
+        protected void onRunBackToMove()
+        {
+            mState = State.MOVE;
+            mBasePos = VectorF.fromEvent(mLastEvent);
+        }
+
+        protected void onTouchUp(MotionEvent e)
         {
             gotoSleep();
         }
-    }
 
-    protected void onRunStart()
-    {
-        mState = State.MOVE;
-    }
-
-    protected void onTouchMoveMove(MotionEvent e)
-    {
-        mLastEvent = e;
-
-        boolean isModifierOn = isModifierOn();
-
-        if (!isInGestureArea(e) && !isModifierOn)
+        private void gotoSleep()
         {
-            mState = State.REPEAT;
-            mHandler.postDelayed(mRunnable, 100);
-            return;
+            mHandler.removeCallbacks(this);
+            mLastEvent = null;
+            if (mState != State.SLEEP && mState != mState.START)
+            {
+                onFinish();
+            }
+            mState = State.SLEEP;
         }
 
-        float cursorTolerance = resources.getCursorTolerance();
-        VectorF delta = VectorF.fromEvent(e).sub(mBasePos).cutoff(cursorTolerance);
-
-        if (delta.x != 0)
+        private boolean isInGestureArea(MotionEvent e)
         {
-            key(delta.x < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
-            mBasePos.x += Math.copySign(cursorTolerance, delta.x);
+            return getBounds().contains(e.getRawX(), e.getRawY());
         }
-        else if (delta.y != 0)
-        {
-            key(delta.y < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-            mBasePos.y += Math.copySign(cursorTolerance, delta.y);
-        }
-        else
-        {
-            return;
-        }
-
-        if (isModifierOn)
-        {
-            gotoSleep();
-        }
-    }
-
-    protected void onTouchMoveRepeat(MotionEvent e)
-    {
-        mLastEvent = e;
-
-        if (isInGestureArea(e))
-        {
-            mState = State.BACK_TO_MOVE;
-            mHandler.removeCallbacks(mRunnable);
-            mHandler.postDelayed(mRunnable, 200);
-        }
-    }
-
-    protected void onRunRepeat()
-    {
-        RectF bounds = getBounds();
-        VectorF pos = VectorF.fromEvent(mLastEvent);
-
-        if (!bounds.contains(pos.x, bounds.top))
-        {
-            key(pos.x < bounds.left ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
-        }
-        else if (!bounds.contains(bounds.left, pos.y))
-        {
-            key(pos.y < bounds.top ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-        }
-
-        if (isModifierOn())
-        {
-            gotoSleep();
-        }
-
-        mHandler.postDelayed(mRunnable, 100);
-    }
-
-    protected void onTouchMoveBackToMove(MotionEvent e)
-    {
-        mLastEvent = e;
-    }
-
-    protected void onRunBackToMove()
-    {
-        mState = State.MOVE;
-        mBasePos = VectorF.fromEvent(mLastEvent);
-    }
-
-    protected void onTouchUp(MotionEvent e)
-    {
-        gotoSleep();
-    }
-
-    private void gotoSleep()
-    {
-        mState = State.SLEEP;
-        mHandler.removeCallbacks(mRunnable);
-        mLastEvent = null;
-    }
-
-    private boolean isInGestureArea(MotionEvent e)
-    {
-        return getBounds().contains(e.getRawX(), e.getRawY());
     }
 }

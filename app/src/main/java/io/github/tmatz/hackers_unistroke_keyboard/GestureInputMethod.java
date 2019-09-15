@@ -250,7 +250,7 @@ implements IKeyboardService
                 }
 
                 @Override
-                protected void key(int keyCode)
+                protected void onKey(int keyCode)
                 {
                     mViewModel.key(keyCode);
                 }
@@ -262,7 +262,7 @@ implements IKeyboardService
                 }
 
                 @Override
-                protected void onRunStart()
+                protected void onStart()
                 {
                     mViewController.update();
 
@@ -274,7 +274,7 @@ implements IKeyboardService
                     overlay.clear(false);
                     overlayNum.clear(false);
 
-                    super.onRunStart();
+                    super.onStart();
                 }
             };
 
