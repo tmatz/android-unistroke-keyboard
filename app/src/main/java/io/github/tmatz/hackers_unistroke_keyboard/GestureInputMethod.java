@@ -235,48 +235,8 @@ implements IKeyboardService
                     }
                 });
 
-            final OnTouchCursorGestureListener onTouchCursorGestureListener = new OnTouchCursorGestureListener(mResources)
-            {
-                @Override
-                protected boolean isSpecialOn()
-                {
-                    return mViewModel.isSpecialOn();
-                }
-
-                @Override
-                protected boolean isModifierOn()
-                {
-                    return mViewModel.isCtrlOn() || mViewModel.isAltOn();
-                }
-
-                @Override
-                protected void onKey(int keyCode)
-                {
-                    mViewModel.key(keyCode);
-                }
-
-                @Override
-                protected RectF getBounds()
-                {
-                    return getCenterRect();
-                }
-
-                @Override
-                protected void onStart()
-                {
-                    mViewController.update();
-
-                    if (!vibrate(false))
-                    {
-                        Toast.makeText(GestureInputMethod.this, "cursor mode", Toast.LENGTH_SHORT).show();
-                    }
-
-                    overlay.clear(false);
-                    overlayNum.clear(false);
-
-                    super.onStart();
-                }
-            };
+            final OnTouchCursorGestureListener onTouchCursorGestureListener =
+                new GestureAreaOnTouchCursorGestureListener(mResources, overlay, overlayNum);
 
             overlay.setOnTouchListener(onTouchCursorGestureListener);
             overlayNum.setOnTouchListener(onTouchCursorGestureListener);
@@ -606,5 +566,60 @@ implements IKeyboardService
                 return flags;
             }
         }
+
+        private class GestureAreaOnTouchCursorGestureListener
+        extends OnTouchCursorGestureListener
+        {
+            private final GestureOverlayView[] overlay;
+
+            public GestureAreaOnTouchCursorGestureListener(ApplicationResources resources, GestureOverlayView ...overlay)
+            {
+                super(resources);
+                this.overlay = overlay;
+            }
+
+            @Override
+            protected boolean isSpecialOn()
+            {
+                return mViewModel.isSpecialOn();
+            }
+
+            @Override
+            protected boolean isModifierOn()
+            {
+                return mViewModel.isCtrlOn() || mViewModel.isAltOn();
+            }
+
+            @Override
+            protected void onKey(int keyCode)
+            {
+                mViewModel.key(keyCode);
+            }
+
+            @Override
+            protected RectF getBounds()
+            {
+                return getCenterRect();
+            }
+
+            @Override
+            protected void onStart()
+            {
+                mViewController.update();
+
+                if (!vibrate(false))
+                {
+                    Toast.makeText(GestureInputMethod.this, "cursor mode", Toast.LENGTH_SHORT).show();
+                }
+
+                for (GestureOverlayView v: overlay)
+                {
+                    v.clear(false);
+                }
+
+                super.onStart();
+            }
+        };
+
     }
 }
