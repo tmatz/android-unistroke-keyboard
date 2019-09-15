@@ -49,6 +49,8 @@ implements OnTouchListener
     private class StateMachine implements Runnable
     {
         private static final int CURSOR_GESTURE_START_MS = 300;
+        private static final int CURSOR_GESTURE_REPEAT_MS = 100;
+        private static final int CURSOR_GESTURE_PAUSE_MS = 200;
 
         private enum State
         {
@@ -153,7 +155,7 @@ implements OnTouchListener
 
             if (mMoveDistance > resources.getCursorTolerance())
             {
-                gotoSleep();
+                sleep();
             }
         }
 
@@ -172,7 +174,7 @@ implements OnTouchListener
             if (!isInGestureArea(e) && !isModifierOn)
             {
                 mState = State.REPEAT;
-                mHandler.postDelayed(this, 100);
+                mHandler.postDelayed(this, CURSOR_GESTURE_REPEAT_MS);
                 return;
             }
 
@@ -196,7 +198,7 @@ implements OnTouchListener
 
             if (isModifierOn)
             {
-                gotoSleep();
+                sleep();
             }
         }
 
@@ -208,7 +210,7 @@ implements OnTouchListener
             {
                 mState = State.BACK_TO_MOVE;
                 mHandler.removeCallbacks(this);
-                mHandler.postDelayed(this, 200);
+                mHandler.postDelayed(this, CURSOR_GESTURE_PAUSE_MS);
             }
         }
 
@@ -228,10 +230,10 @@ implements OnTouchListener
 
             if (isModifierOn())
             {
-                gotoSleep();
+                sleep();
             }
 
-            mHandler.postDelayed(this, 100);
+            mHandler.postDelayed(this, CURSOR_GESTURE_REPEAT_MS);
         }
 
         protected void onTouchMoveBackToMove(MotionEvent e)
@@ -247,10 +249,10 @@ implements OnTouchListener
 
         protected void onTouchUp(MotionEvent e)
         {
-            gotoSleep();
+            sleep();
         }
 
-        private void gotoSleep()
+        private void sleep()
         {
             mHandler.removeCallbacks(this);
             mLastEvent = null;
