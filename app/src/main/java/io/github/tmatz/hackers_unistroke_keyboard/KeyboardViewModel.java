@@ -38,6 +38,22 @@ class KeyboardViewModel
         return (mMetaState & META_SHIFT) != 0;
     }
 
+    public void setShiftOn(boolean on)
+    {
+        if (on)
+        {
+            mMetaState &= ~META_CAPS_LOCK;
+            mMetaState |= META_SHIFT;
+            mShiftUsed = false;
+        }
+        else
+        {
+            mMetaState &= ~(META_SHIFT | META_CAPS_LOCK);
+        }
+
+        mService.updateView();
+    }
+
     public boolean isCtrlOn()
     {
         return (mMetaState & META_CTRL) != 0;

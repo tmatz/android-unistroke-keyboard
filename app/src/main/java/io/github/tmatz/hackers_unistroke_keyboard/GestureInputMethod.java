@@ -300,6 +300,10 @@ implements IKeyboardService
                             {
                                 mViewModel.key(KeyEvent.KEYCODE_FORWARD_DEL);
                             }
+                            else if (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT && direction == FlickDirection.FLICK_RIGHT)
+                            {
+                                mViewModel.setShiftOn(false);
+                            }
                             else
                             {
                                 mViewModel.key(keyCode);
