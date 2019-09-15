@@ -45,14 +45,14 @@ class GestureStore
 
     private class Loader
     {
-        final Context context;
+        private final Context context;
 
-        Loader(Context context)
+        public Loader(Context context)
         {
             this.context = context;
         }
 
-        WeightedGestureLibrary load(double weight, int rawId, int category)
+        public WeightedGestureLibrary load(double weight, int rawId, int category)
         {
             GestureLibrary library = GestureLibraries.fromRawResource(context, rawId);
             library.setOrientationStyle(8);
@@ -63,18 +63,18 @@ class GestureStore
 
     private class WeightedGestureLibrary
     {
-        final GestureLibrary library;
-        final int category;
-        final double weight;
+        private final GestureLibrary library;
+        private final int category;
+        private final double weight;
 
-        WeightedGestureLibrary(GestureLibrary library, int category, double weight)
+        public WeightedGestureLibrary(GestureLibrary library, int category, double weight)
         {
             this.library = library;
             this.category = category;
             this.weight = weight;
         }
 
-        PredictionResult recognize(Gesture gesture, int flags)
+        public PredictionResult recognize(Gesture gesture, int flags)
         {
             if (gesture.getLength() < resources.getPeriodTolerance())
             {
@@ -115,4 +115,3 @@ class GestureStore
         }
     }
 }
-
