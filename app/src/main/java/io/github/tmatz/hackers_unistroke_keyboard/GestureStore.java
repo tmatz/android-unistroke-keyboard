@@ -21,18 +21,11 @@ class GestureStore
     public GestureStore(Context context, ApplicationResources resources)
     {
         this.resources = resources;
-        libraries.add(loadGestureLibrary(context, R.raw.gestures_alphabet, 1.0, FLAG_CATEGORY_ALPHABET));
-        libraries.add(loadGestureLibrary(context, R.raw.gestures_number, 1.0, FLAG_CATEGORY_NUMBER));
-        libraries.add(loadGestureLibrary(context, R.raw.gestures_special, 1.0, FLAG_CATEGORY_SPECIAL));
-        libraries.add(loadGestureLibrary(context, R.raw.gestures_control, 0.7, FLAG_CATEGORY_CONTROL));
-    }
-
-    private WeightedGestureLibrary loadGestureLibrary(Context context, int rawId, double weight, int category)
-    {
-        GestureLibrary library = GestureLibraries.fromRawResource(context, rawId);
-        library.setOrientationStyle(8);
-        library.load();
-        return new WeightedGestureLibrary(library, weight, category);
+        Loader loader = new Loader(context);
+        libraries.add(loader.load(1.0, R.raw.gestures_alphabet, FLAG_CATEGORY_ALPHABET));
+        libraries.add(loader.load(1.0, R.raw.gestures_number, FLAG_CATEGORY_NUMBER));
+        libraries.add(loader.load(1.0, R.raw.gestures_special, FLAG_CATEGORY_SPECIAL));
+        libraries.add(loader.load(0.7, R.raw.gestures_control, FLAG_CATEGORY_CONTROL));
     }
 
     public PredictionResult recognize(Gesture gesture, int flags)
@@ -50,20 +43,38 @@ class GestureStore
         return prediction;
     }
 
-    private class WeightedGestureLibrary
+    private class Loader
     {
-        private final GestureLibrary library;
-        private final double weight;
-        private final int category;
+        final Context context;
 
-        public WeightedGestureLibrary(GestureLibrary library, double weight, int category)
+        Loader(Context context)
         {
-            this.library = library;
-            this.weight = weight;
-            this.category = category;
+            this.context = context;
         }
 
-        public PredictionResult recognize(Gesture gesture, int flags)
+        WeightedGestureLibrary load(double weight, int rawId, int category)
+        {
+            GestureLibrary library = GestureLibraries.fromRawResource(context, rawId);
+            library.setOrientationStyle(8);
+            library.load();
+            return new WeightedGestureLibrary(library, category, weight);
+        }
+    }
+
+    private class WeightedGestureLibrary
+    {
+        final GestureLibrary library;
+        final int category;
+        final double weight;
+
+        WeightedGestureLibrary(GestureLibrary library, int category, double weight)
+        {
+            this.library = library;
+            this.category = category;
+            this.weight = weight;
+        }
+
+        PredictionResult recognize(Gesture gesture, int flags)
         {
             if (gesture.getLength() < resources.getPeriodTolerance())
             {
