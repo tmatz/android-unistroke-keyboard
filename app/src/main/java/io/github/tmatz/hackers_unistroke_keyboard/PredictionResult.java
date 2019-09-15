@@ -4,6 +4,8 @@ import android.gesture.Prediction;
 
 class PredictionResult
 {
+    public static final PredictionResult Zero = new PredictionResult();
+
     public final double score;
     public final String name;
 

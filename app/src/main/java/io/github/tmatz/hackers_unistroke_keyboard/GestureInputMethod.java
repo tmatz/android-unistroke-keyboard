@@ -215,7 +215,7 @@ implements IKeyboardService
             final GestureOverlayView overlayNum = view.findViewById(R.id.gestures_overlay_num);
 
             overlay.addOnGestureListener(
-                new OnGestureUnistrokeListener(GestureStore.FLAG_GESTURE_ALPHABET)
+                new OnGestureUnistrokeListener(GestureStore.FLAG_CATEGORY_ALPHABET)
                 {
                     @Override
                     public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
@@ -226,7 +226,7 @@ implements IKeyboardService
                 });
 
             overlayNum.addOnGestureListener(
-                new OnGestureUnistrokeListener(GestureStore.FLAG_GESTURE_NUMBER)
+                new OnGestureUnistrokeListener(GestureStore.FLAG_CATEGORY_NUMBER)
                 {
                     @Override
                     public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
@@ -550,7 +550,7 @@ implements IKeyboardService
             public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
             {
                 Gesture gesture = overlay.getGesture();
-                PredictionResult prediction = mResources.GestureStore.predict(gesture, makeFlags());
+                PredictionResult prediction = mResources.gestures.recognize(gesture, makeFlags());
                 if (prediction.score == 0)
                 {
                     vibrate(true);
@@ -574,11 +574,11 @@ implements IKeyboardService
 
                 if (mViewModel.isSpecialOn())
                 {
-                    flags = GestureStore.FLAG_GESTURE_SPECIAL;
+                    flags = GestureStore.FLAG_CATEGORY_SPECIAL;
                 }
                 else
                 {
-                    flags = mFlags | GestureStore.FLAG_GESTURE_CONTROL;
+                    flags = mFlags | GestureStore.FLAG_CATEGORY_CONTROL;
                 }
 
                 if (mViewModel.isCtrlOn() || mViewModel.isAltOn())
