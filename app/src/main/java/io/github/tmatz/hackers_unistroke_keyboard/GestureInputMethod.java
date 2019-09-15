@@ -366,8 +366,6 @@ implements IKeyboardService
             }
         }
 
-
-
         private class OnGestureUnistrokeListener
         extends GestureOverlayViewOnGestureListener
         {

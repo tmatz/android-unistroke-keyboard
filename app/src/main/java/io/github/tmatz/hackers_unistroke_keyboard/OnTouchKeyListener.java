@@ -12,7 +12,7 @@ implements OnTouchListener
 {
     private final int keyCode;
     private final ApplicationResources resources;
-    private final KeyRepeatRunnable runnable = new KeyRepeatRunnable();
+    private final KeyRepeatRunnable repeater = new KeyRepeatRunnable();
     private boolean mKeyPress;
 
     public OnTouchKeyListener(ApplicationResources resources, int keyCode)
@@ -44,29 +44,32 @@ implements OnTouchListener
             case MotionEvent.ACTION_DOWN:
                 if (mKeyPress)
                 {
-                    return false;
+                    break;
                 }
                 RectF rect = ViewUtils.getViewRect(v);
                 if (!rect.contains(e.getRawX(), e.getRawY()))
                 {
-                    return false;
+                    break;
                 }
 
                 mKeyPress = true;
                 onKeyDown(keyCode);
-                runnable.startRepeat();
+                repeater.startRepeat();
                 return true;
 
             case MotionEvent.ACTION_UP:
                 if (!mKeyPress)
                 {
-                    return false;
+                    break;
                 }
 
                 mKeyPress = false;
-                runnable.stopRepeat();
+                repeater.stopRepeat();
                 onKeyUp(keyCode);
                 return true;
+
+            default:
+                break;
         }
 
         return false;
