@@ -120,6 +120,9 @@ implements OnTouchListener
                 case KeyDown:
                     onRepeated();
                     break;
+
+                default:
+                    break;
             }
         }
 
@@ -224,18 +227,9 @@ implements OnTouchListener
         private boolean isFlick()
         {
             double distance = track.distance();
-            if (distance > resources.getCursorTolerance() * 2)
-            {
-                return true;
-            }
-
-            if ((distance > resources.getCursorTolerance()) &&
-                !contains(track.view(), track.event()))
-            {
-                return true;
-            }
-
-            return false;
+            return (distance > resources.getCursorTolerance() * 2) ||
+                ((distance > resources.getCursorTolerance()) &&
+                !contains(track.view(), track.event()));
         }
 
         private boolean contains(View v, MotionEvent e)
