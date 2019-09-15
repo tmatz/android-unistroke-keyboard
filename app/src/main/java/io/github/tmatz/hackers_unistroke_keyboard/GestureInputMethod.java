@@ -292,6 +292,19 @@ implements IKeyboardService
                         {
                             mViewModel.keyRepeat(keyCode);
                         }
+
+                        @Override
+                        protected void onFlick(int keyCode, FlickDirection direction)
+                        {
+                            if (keyCode == KeyEvent.KEYCODE_DEL && direction == FlickDirection.FLICK_LEFT)
+                            {
+                                mViewModel.key(KeyEvent.KEYCODE_FORWARD_DEL);
+                            }
+                            else
+                            {
+                                mViewModel.key(keyCode);
+                            }
+                        }
                     });
             }
         }
@@ -475,3 +488,4 @@ implements IKeyboardService
         };
     }
 }
+
