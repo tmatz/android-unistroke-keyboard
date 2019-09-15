@@ -5,6 +5,11 @@ import android.content.res.Resources;
 
 class ApplicationResources
 {
+    public static final int KEYREPEAT_DELAY_FIRST_MS = 400;
+    public static final int KEYREPEAT_DELAY_MS = 100;
+    public static final int VIBRATION_MS = 15;
+    public static final int VIBRATION_STRONG_MS = 30;
+
     public final Resources resources;
     public final GestureStore gestures;
 

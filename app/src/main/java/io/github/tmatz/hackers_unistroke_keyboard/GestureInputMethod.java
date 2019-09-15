@@ -11,7 +11,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
@@ -22,12 +21,7 @@ public class GestureInputMethod
 extends InputMethodService
 implements IKeyboardService
 {
-    private static final int KEYREPEAT_DELAY_FIRST_MS = 400;
-    private static final int KEYREPEAT_DELAY_MS = 100;
-    private static final int VIBRATION_MS = 15;
-    private static final int VIBRATION_STRONG_MS = 30;
-
-    private ApplicationResources mResources;
+    private ApplicationResources resources;
     private ViewController mViewController;
     private final KeyboardViewModel mViewModel = new KeyboardViewModel(this);
     private final Handler mHandler = new Handler();
@@ -36,7 +30,7 @@ implements IKeyboardService
     public void onCreate()
     {
         super.onCreate();
-        mResources = new ApplicationResources(getApplicationContext());
+        resources = new ApplicationResources(getApplicationContext());
         mViewController = new ViewController();
     }
 
@@ -134,7 +128,7 @@ implements IKeyboardService
         {
             return false;
         }
-        vibrator.vibrate(strong ? VIBRATION_STRONG_MS : VIBRATION_MS);
+        vibrator.vibrate(strong ? resources.VIBRATION_STRONG_MS : resources.VIBRATION_MS);
         return true;
     }
 
@@ -236,7 +230,7 @@ implements IKeyboardService
                 });
 
             final OnTouchCursorGestureListener onTouchCursorGestureListener =
-                new GestureAreaOnTouchCursorGestureListener(mResources, overlay, overlayNum);
+                new GestureAreaOnTouchCursorGestureListener(resources, overlay, overlayNum);
 
             overlay.setOnTouchListener(onTouchCursorGestureListener);
             overlayNum.setOnTouchListener(onTouchCursorGestureListener);
@@ -276,26 +270,29 @@ implements IKeyboardService
             final Button button = rootView.findViewById(id);
             final String tag = (String)button.getTag();
             final int keyCode = KeyEventUtils.keyCodeFromTag(tag);
-            switch (keyCode)
+            if (keyCode != KeyEvent.KEYCODE_UNKNOWN)
             {
-                case KeyEvent.KEYCODE_UNKNOWN:
-                    break;
+                button.setOnTouchListener(
+                    new OnTouchKeyListener(resources, keyCode)
+                    {
+                        @Override
+                        protected void onKeyDown(int keyCode)
+                        {
+                            mViewModel.keyDown(keyCode);
+                        }
 
-                case KeyEvent.KEYCODE_SHIFT_LEFT:
-                case KeyEvent.KEYCODE_SHIFT_RIGHT:
-                    button.setOnTouchListener(new OnShiftKeyListener(keyCode));
-                    break;
+                        @Override
+                        protected void onKeyUp(int keyCode)
+                        {
+                            mViewModel.keyUp(keyCode);
+                        }
 
-                case KeyEvent.KEYCODE_CTRL_LEFT:
-                case KeyEvent.KEYCODE_CTRL_RIGHT:
-                case KeyEvent.KEYCODE_ALT_LEFT:
-                case KeyEvent.KEYCODE_ALT_RIGHT:
-                    button.setOnTouchListener(new OnModifierKeyListener(keyCode));
-                    break;
-
-                default:
-                    button.setOnTouchListener(new OnKeyListener(keyCode));
-                    break;
+                        @Override
+                        protected void onKeyRepeat(int keyCode)
+                        {
+                            mViewModel.keyRepeat(keyCode);
+                        }
+                    });
             }
         }
 
@@ -369,185 +366,43 @@ implements IKeyboardService
             }
         }
 
-        private class OnKeyListener
-        implements OnTouchListener
-        {
-            private final int mKeyCode;
-            private boolean mKeyDown;
 
-            private final Runnable mRunnable = new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    mViewModel.keyRepeat(mKeyCode);
-                    mHandler.postDelayed(mRunnable, KEYREPEAT_DELAY_MS);
-                }
-            };
-
-            public OnKeyListener(int keyCode)
-            {
-                mKeyCode = keyCode;
-            }
-
-            @Override
-            public boolean onTouch(View v, MotionEvent e)
-            {
-                RectF rect = ViewUtils.getViewRect(v);
-                switch (e.getAction())
-                {
-                    case MotionEvent.ACTION_DOWN:
-                        if (!rect.contains(e.getRawX(), e.getRawY()))
-                        {
-                            return false;
-                        }
-
-                        mViewModel.keyDown(mKeyCode);
-                        mKeyDown = true;
-                        mHandler.postDelayed(mRunnable, KEYREPEAT_DELAY_FIRST_MS);
-                        return true;
-
-                    case MotionEvent.ACTION_UP:
-                        if (!mKeyDown)
-                        {
-                            return false;
-                        }
-
-                        mHandler.removeCallbacks(mRunnable);
-                        mViewModel.keyUp(mKeyCode);
-                        mKeyDown = false;
-                        return true;
-                }
-
-                return false;
-            }
-        }
-
-        private class OnModifierKeyListener
-        implements OnTouchListener
-        {
-            private final int mKeyCode;
-            private boolean mKeyDown;
-
-            public OnModifierKeyListener(int keyCode)
-            {
-                mKeyCode = keyCode;
-            }
-
-            @Override
-            public boolean onTouch(View v, MotionEvent e)
-            {
-                RectF rect = ViewUtils.getViewRect(v);
-                switch (e.getAction())
-                {
-                    case MotionEvent.ACTION_DOWN:
-                        if (!rect.contains(e.getRawX(), e.getRawY()))
-                        {
-                            return false;
-                        }
-
-                        mViewModel.keyDown(mKeyCode);
-                        mKeyDown = true;
-                        return true;
-
-                    case MotionEvent.ACTION_UP:
-                        if (!mKeyDown)
-                        {
-                            return false;
-                        }
-
-                        mViewModel.keyUp(mKeyCode);
-                        mKeyDown = false;
-                        return true;
-                }
-
-                return false;
-            }
-        }
-
-        private class OnShiftKeyListener
-        extends OnTouchGestureListener
-        {
-            private final int mKeyCode;
-            private boolean mKeyDown;
-
-            public OnShiftKeyListener(int keyCode)
-            {
-                super(GestureInputMethod.this);
-                mKeyCode = keyCode;
-            }
-
-            @Override
-            public boolean onTouch(View v, MotionEvent e)
-            {
-
-                RectF rect = ViewUtils.getViewRect(v);
-                switch (e.getAction())
-                {
-                    case MotionEvent.ACTION_DOWN:
-                        if (!rect.contains(e.getRawX(), e.getRawY()))
-                        {
-                            break;
-                        }
-
-                        mViewModel.keyDown(mKeyCode);
-                        mKeyDown = true;
-                        break;
-
-                    case MotionEvent.ACTION_UP:
-                        if (!mKeyDown)
-                        {
-                            break;
-                        }
-
-                        mViewModel.keyUp(mKeyCode);
-                        mKeyDown = false;
-                        break;
-
-                    default:
-                        break;
-                }
-
-                super.onTouch(v, e);
-                return false;
-            }
-        }
 
         private class OnGestureUnistrokeListener
         extends GestureOverlayViewOnGestureListener
         {
-            private final int mFlags;
+            private final int category;
 
-            public OnGestureUnistrokeListener(int flags)
+            public OnGestureUnistrokeListener(int category)
             {
-                mFlags = flags;
+                this.category = category;
             }
 
             @Override
             public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
             {
                 Gesture gesture = overlay.getGesture();
-                PredictionResult prediction = mResources.gestures.recognize(gesture, makeFlags());
+                PredictionResult prediction = resources.gestures.recognize(gesture, makeFlags());
                 if (prediction.score == 0)
                 {
                     vibrate(true);
                     return;
                 }
 
-                String name = prediction.name;
-                int keyCode = KeyEventUtils.keyCodeFromTag(name);
+                int keyCode = KeyEventUtils.keyCodeFromTag(prediction.name);
                 if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
                 {
-                    mViewModel.sendText(name);
-                    return;
+                    mViewModel.sendText(prediction.name);
                 }
-
-                mViewModel.key(keyCode);
+                else
+                {
+                    mViewModel.key(keyCode);
+                }
             }
 
             private int makeFlags()
             {
-                int flags = mFlags;
+                int flags;
 
                 if (mViewModel.isSpecialOn())
                 {
@@ -555,7 +410,7 @@ implements IKeyboardService
                 }
                 else
                 {
-                    flags = mFlags | GestureStore.FLAG_CATEGORY_CONTROL;
+                    flags = this.category | GestureStore.FLAG_CATEGORY_CONTROL;
                 }
 
                 if (mViewModel.isCtrlOn() || mViewModel.isAltOn())
@@ -620,6 +475,5 @@ implements IKeyboardService
                 super.onStart();
             }
         };
-
     }
 }
