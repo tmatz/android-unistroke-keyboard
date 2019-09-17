@@ -18,6 +18,14 @@ implements OnTouchListener
         FLICK_DOWN,
     }
 
+    private enum State
+    {
+        Sleep,
+        Watch,
+        KeyDown,
+        Flick,
+    }
+
     private final int keyCode;
     private final ApplicationResources resources;
     private final StateMachine stateMachine = new StateMachine();
@@ -56,15 +64,6 @@ implements OnTouchListener
 
     private class StateMachine implements Runnable
     {
-        private enum State
-        {
-            Sleep,
-            Watch,
-            KeyDown,
-            Flick,
-        }
-
-        private final Handler handler = new Handler();
         private final MotionTrack track = new MotionTrack();
         private State mState = State.Sleep;
 
@@ -73,33 +72,24 @@ implements OnTouchListener
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
-                    if (mState != State.Sleep)
-                    {
-                        break;
-                    }
-
-                    track.set(v, e);
-                    start();
-                    return true;
+                    return start(v, e);
 
                 case MotionEvent.ACTION_MOVE:
-                    if (mState == State.Sleep)
+                    if (track.view() == null)
                     {
                         break;
                     }
-
-                    track.set(v, e);
+                    track.set(e);
                     break;
 
                 case MotionEvent.ACTION_UP:
-                    if (mState == State.Sleep)
+                    if (track.view() == null)
                     {
                         break;
                     }
-
-                    track.set(v, e);
+                    track.set(e);
                     finish();
-                    return true;
+                    break;
 
                 default:
                     break;
@@ -126,11 +116,13 @@ implements OnTouchListener
             }
         }
 
-        private void start()
+        private boolean start(View v, MotionEvent e)
         {
             mState = State.Watch;
-            track.reset();
-            handler.postDelayed(this, 200);
+            track.set(v, e);
+            track.setBasePosition(track.position());
+            track.view().postDelayed(this, resources.KEYREPEAT_DELAY_FIRST_MS);
+            return true;
         }
 
         private void onWatched()
@@ -146,7 +138,7 @@ implements OnTouchListener
 
                 if (!KeyEvent.isModifierKey(keyCode))
                 {
-                    handler.postDelayed(this, resources.KEYREPEAT_DELAY_FIRST_MS);
+                    track.view().postDelayed(this, resources.KEYREPEAT_DELAY_FIRST_MS);
                 }
             }
         }
@@ -154,7 +146,7 @@ implements OnTouchListener
         public void onRepeated()
         {
             onKeyRepeat(keyCode);
-            handler.postDelayed(this, resources.KEYREPEAT_DELAY_MS);
+            track.view().postDelayed(this, resources.KEYREPEAT_DELAY_MS);
         }
 
         private void finish()
@@ -183,7 +175,7 @@ implements OnTouchListener
             }
 
             mState = State.Sleep;
-            handler.removeCallbacks(this);
+            track.view().removeCallbacks(this);
             track.clear();
         }
 
@@ -199,11 +191,11 @@ implements OnTouchListener
 
             if (contains(track.view(), track.event()))
             {
-                v = track.vector();
+                v = track.difference();
             }
             else
             {
-                VectorF pos = VectorF.fromEvent(track.event());
+                VectorF pos = track.position();
                 RectF viewRect = ViewUtils.getViewRect(track.view());
                 v = pos.cutoff(viewRect);
             }
@@ -220,13 +212,13 @@ implements OnTouchListener
 
         private boolean maybeFlick()
         {
-            double distance = track.distance();
+            double distance = track.difference().length();
             return (distance > resources.getCursorTolerance());
         }
 
         private boolean isFlick()
         {
-            double distance = track.distance();
+            double distance = track.difference().length();
             return (distance > resources.getCursorTolerance() * 2) ||
                 ((distance > resources.getCursorTolerance()) &&
                 !contains(track.view(), track.event()));

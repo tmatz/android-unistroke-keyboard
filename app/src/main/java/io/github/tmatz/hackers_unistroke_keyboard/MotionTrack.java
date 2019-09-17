@@ -5,7 +5,7 @@ import android.view.View;
 
 class MotionTrack
 {
-    private VectorF mBasePos = VectorF.Zero;
+    private VectorF mBasePosition = VectorF.Zero;
     private double mTrackDistance;
     private MotionEvent mEvent;
     private View mView;
@@ -22,24 +22,25 @@ class MotionTrack
         mEvent = e;
     }
 
-    public void reset()
+    public void set(MotionEvent e)
     {
-        if (mEvent == null)
-        {
-            return;
-        }
-        mBasePos = VectorF.fromEvent(mEvent);
-        mTrackDistance = 0;
+        mEvent = e;
     }
 
-    public double track(MotionEvent e)
+    public double trackPosition()
     {
-        VectorF pos = VectorF.fromEvent(e);
-        mTrackDistance += pos.sub(mBasePos).fastLength();
-        mBasePos = pos;
+        VectorF pos = position();
+        mTrackDistance += pos.sub(basePosition()).fastLength();
+        mBasePosition = pos;
         return mTrackDistance;
     }
 
+    public void setBasePosition(VectorF basePosition)
+    {
+        mBasePosition = basePosition;
+        mTrackDistance = 0;
+    }
+    
     public View view()
     {
         return mView;
@@ -50,9 +51,14 @@ class MotionTrack
         return mEvent;
     }
 
+    public VectorF position()
+    {
+        return VectorF.fromEvent(event());
+    }
+    
     public VectorF basePosition()
     {
-        return mBasePos;
+        return mBasePosition;
     }
     
     public double trackDistance()
@@ -60,14 +66,9 @@ class MotionTrack
         return mTrackDistance;
     }
 
-    public double distance()
+    public VectorF difference()
     {
-        return VectorF.fromEvent(event()).sub(mBasePos).length();
-    }
-
-    public VectorF vector()
-    {
-        return VectorF.fromEvent(event()).sub(basePosition());
+        return position().sub(basePosition());
     }
 }
 
