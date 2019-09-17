@@ -19,11 +19,11 @@ implements OnTouchListener
         this.resources = resources;
     }
 
-    protected abstract boolean isSpecialOn()
+    protected abstract boolean isSpecialOn();
 
-    protected abstract boolean isModifierOn()
+    protected abstract boolean isModifierOn();
 
-    protected abstract RectF getBounds()
+    protected abstract RectF getBounds();
 
     protected void onStart()
     {
