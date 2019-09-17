@@ -66,6 +66,11 @@ class VectorF
         return new VectorF(e.getRawX(), e.getRawY());
     }
 
+    public boolean isContained(RectF rect)
+    {
+        return rect.contains(x, y);
+    }
+
     @Override
     public String toString()
     {
