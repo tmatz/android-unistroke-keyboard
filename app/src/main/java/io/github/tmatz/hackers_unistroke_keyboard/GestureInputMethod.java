@@ -273,7 +273,7 @@ implements IKeyboardService
             if (keyCode != KeyEvent.KEYCODE_UNKNOWN)
             {
                 button.setOnTouchListener(
-                    new OnTouchKeyListener(resources, keyCode)
+                    new OnTouchKeyListener(GestureInputMethod.this, resources, keyCode)
                     {
                         @Override
                         protected void onKeyDown(int keyCode)

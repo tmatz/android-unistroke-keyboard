@@ -1,13 +1,13 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
-import android.graphics.RectF;
-import android.os.Handler;
+import android.content.Context;
+import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 
-class OnTouchKeyListener
+public class OnTouchKeyListener
 implements OnTouchListener
 {
     public enum FlickDirection
@@ -18,22 +18,15 @@ implements OnTouchListener
         FLICK_DOWN,
     }
 
-    private enum State
-    {
-        Sleep,
-        Watch,
-        KeyDown,
-        Flick,
-    }
-
-    private final int keyCode;
     private final ApplicationResources resources;
-    private final StateMachine stateMachine = new StateMachine();
+    private final int keyCode;
+    private final PrivateKeyGestureDetector detector;
 
-    public OnTouchKeyListener(ApplicationResources resources, int keyCode)
+    public OnTouchKeyListener(Context context, ApplicationResources resources, int keyCode)
     {
         this.resources = resources;
         this.keyCode = keyCode;
+        this.detector = new PrivateKeyGestureDetector(context);
     }
 
     protected void onKeyDown(int keyCode)
@@ -57,172 +50,122 @@ implements OnTouchListener
     }
 
     @Override
-    public boolean onTouch(View v, MotionEvent e)
+    public boolean onTouch(View view, MotionEvent e)
     {
-        return stateMachine.onTouch(v, e);
+        return detector.onTouchEvent(view, e);
     }
 
-    private class StateMachine implements Runnable
+    private class PrivateKeyGestureDetector
+    extends GestureDetector.SimpleOnGestureListener
+    implements Runnable
     {
-        private final MotionTrack track = new MotionTrack();
-        private State mState = State.Sleep;
+        private final GestureDetector gestureDetector;
+        private View mView;
+        public boolean mLongPress = false;
 
-        public boolean onTouch(View v, MotionEvent e)
+        public PrivateKeyGestureDetector(Context context)
         {
-            switch (e.getAction())
-            {
-                case MotionEvent.ACTION_DOWN:
-                    return start(v, e);
-
-                case MotionEvent.ACTION_MOVE:
-                    if (track.view() == null)
-                    {
-                        break;
-                    }
-                    track.set(e);
-                    move();
-                    break;
-
-                case MotionEvent.ACTION_UP:
-                    if (track.view() == null)
-                    {
-                        break;
-                    }
-                    track.set(e);
-                    finish();
-                    break;
-
-                default:
-                    break;
-            }
-
-            return false;
+            this.gestureDetector = new GestureDetector(context, this);
         }
 
         @Override
         public void run()
         {
-            switch (mState)
-            {
-                case Watch:
-                    onWatched();
-                    break;
-
-                case KeyDown:
-                    onRepeated();
-                    break;
-
-                default:
-                    break;
-            }
-        }
-
-        private boolean start(View v, MotionEvent e)
-        {
-            mState = State.Watch;
-            track.set(v, e);
-            track.setBasePosition(track.position());
-            track.view().postDelayed(this, resources.KEYREPEAT_DELAY_FIRST_MS);
-            return true;
-        }
-
-        private void move()
-        {
-            if (mState == State.Watch && isFlick())
-            {
-                mState = State.Flick;
-                track.view().removeCallbacks(this);
-            }
-        }
-
-        private void onWatched()
-        {
-            mState = State.KeyDown;
-            onKeyDown(keyCode);
-
-            if (!KeyEvent.isModifierKey(keyCode))
-            {
-                track.view().postDelayed(this, resources.KEYREPEAT_DELAY_MS);
-            }
-        }
-
-        public void onRepeated()
-        {
             onKeyRepeat(keyCode);
-            track.view().postDelayed(this, resources.KEYREPEAT_DELAY_MS);
+            mView.postDelayed(this, resources.KEYREPEAT_DELAY_MS);
         }
 
-        private void finish()
+        public boolean onTouchEvent(View view, MotionEvent e)
         {
-            switch (mState)
+            boolean result = gestureDetector.onTouchEvent(e);
+            switch (e.getAction())
             {
-                case Watch:
-                    onKeyDown(keyCode);
-                    onKeyUp(keyCode);
-                    break;
-
-                case KeyDown:
-                    onKeyUp(keyCode);
-                    break;
-
-                case Flick:
-                    if (isFlick())
+                case MotionEvent.ACTION_DOWN:
+                    if (result == true)
                     {
-                        flick();
+                        mView = view;
+                    }
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                    if (mView != null)
+                    {
+                        onUp(e);
+                        mView = null;
                     }
                     break;
 
                 default:
                     break;
             }
-
-            mState = State.Sleep;
-            track.view().removeCallbacks(this);
-            track.clear();
+            return result;
         }
 
-        private void flick()
+        @Override
+        public boolean onDown(MotionEvent e)
         {
-            FlickDirection direction = getFlickDirection();
-            onFlick(keyCode, direction);
+            return true;
         }
 
-        private FlickDirection getFlickDirection()
+        private void onUp(MotionEvent e)
         {
-            VectorF v;
-
-            if (contains(track.view(), track.event()))
+            if (mLongPress)
             {
-                v = track.difference();
+                onKeyUp(keyCode);
+                mView.removeCallbacks(this);
+            }
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e)
+        {
+            onKeyDown(keyCode);
+            onKeyUp(keyCode);
+            return true;
+        }
+
+        @Override
+        public boolean onDoubleTap(MotionEvent e)
+        {
+            onKeyDown(keyCode);
+            onKeyUp(keyCode);
+            return true;
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY)
+        {
+            return false;
+        }
+
+        @Override
+        public void onLongPress(MotionEvent e)
+        {
+            mLongPress = true;
+            onKeyDown(keyCode);
+            if (!KeyEvent.isModifierKey(keyCode))
+            {
+                mView.postDelayed(this, resources.KEYREPEAT_DELAY_MS);
+            }
+        }
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY)
+        {
+            onFlick(keyCode, getFlickDirection(velocityX, velocityY));
+            return true;
+        }
+
+        private FlickDirection getFlickDirection(float vx, float vy)
+        {
+            if (Math.abs(vx) > Math.abs(vy))
+            {
+                return (vx < 0) ? FlickDirection.FLICK_LEFT : FlickDirection.FLICK_RIGHT;
             }
             else
             {
-                VectorF pos = track.position();
-                RectF viewRect = ViewUtils.getViewRect(track.view());
-                v = pos.cutoff(viewRect);
+                return (vy < 0) ? FlickDirection.FLICK_UP : FlickDirection.FLICK_DOWN;
             }
-
-            if (Math.abs(v.x) > Math.abs(v.y))
-            {
-                return (v.x < 0) ? FlickDirection.FLICK_LEFT : FlickDirection.FLICK_RIGHT;
-            }
-            else
-            {
-                return (v.y < 0) ? FlickDirection.FLICK_UP : FlickDirection.FLICK_DOWN;
-            }
-        }
-
-        private boolean isFlick()
-        {
-            RectF rect = ViewUtils.getViewRect(track.view());
-            float tolerance = resources.getCursorTolerance();
-            rect.inset(-tolerance, -tolerance);
-            return !track.position().isContained(rect);
-        }
-
-        private boolean contains(View v, MotionEvent e)
-        {
-            return ViewUtils.getViewRect(v).contains(e.getRawX(), e.getRawY());
         }
     }
 }
