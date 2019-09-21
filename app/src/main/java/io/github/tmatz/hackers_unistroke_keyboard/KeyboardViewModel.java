@@ -157,7 +157,7 @@ class KeyboardViewModel
             add(new EnterKeyHandler(), KeyEvent.KEYCODE_ENTER);
             add(new PeriodKeyHandler(), KeyEvent.KEYCODE_PERIOD);
             add(new DelKeyHandler(), KeyEvent.KEYCODE_DEL, KeyEvent.KEYCODE_FORWARD_DEL);
-            add(new DPadKeyHandler(), KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN);
+            add(new MoveKeyHandler(), KeyEvent.KEYCODE_MOVE_HOME, KeyEvent.KEYCODE_MOVE_END, KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN);
         }
 
         private void add(KeyHandler handler, int ...keyCode)
@@ -331,7 +331,7 @@ class KeyboardViewModel
             }
         }
 
-        private class DPadKeyHandler extends KeyHandler
+        private class MoveKeyHandler extends KeyHandler
         {
             @Override
             public void down(int keyCode)
