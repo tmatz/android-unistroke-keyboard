@@ -171,13 +171,25 @@ class KeyboardViewModel
         @Override
         public void down(int keyCode)
         {
-            mKeyHandlers.getOrDefault(keyCode, mDefaultKeyHandler).down(keyCode);
+            getKeyHandler(keyCode).down(keyCode);
         }
 
         @Override
         public void up(int keyCode)
         {
-            mKeyHandlers.getOrDefault(keyCode, mDefaultKeyHandler).up(keyCode);
+            getKeyHandler(keyCode).up(keyCode);
+        }
+
+        private KeyHandler getKeyHandler(int keyCode)
+        {
+            if (mKeyHandlers.containsKey(keyCode))
+            {
+                return mKeyHandlers.get(keyCode);
+            }
+            else
+            {
+                return mDefaultKeyHandler;
+            }
         }
 
         private class CtrlKeyHandler extends KeyHandler

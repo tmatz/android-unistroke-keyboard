@@ -7,8 +7,8 @@ class VectorF
 {
     public static final VectorF Zero = new VectorF();
 
-    public float x;
-    public float y;
+    public final float x;
+    public final float y;
 
     public VectorF()
     {
@@ -27,14 +27,14 @@ class VectorF
         return new VectorF(x + v.x, y + v.y);
     }
 
+    public VectorF sub(VectorF v)
+    {
+        return new VectorF(x - v.x, y - v.y);
+    }
+
     public VectorF mult(float f)
     {
         return new VectorF(x * f, y * f);
-    }
-
-    public VectorF sub(VectorF v)
-    {
-        return add(v.mult(-1));
     }
 
     public double length()
@@ -61,9 +61,21 @@ class VectorF
             Math.min(0, y - rect.top) + Math.max(0, y - rect.bottom));
     }
 
+    public VectorF normalizeEach()
+    {
+        return new VectorF(
+            Math.copySign(x == 0 ? 0 : 1, x),
+            Math.copySign(y == 0 ? 0 : 1, y));
+    }
+
     public static VectorF fromEvent(MotionEvent e)
     {
         return new VectorF(e.getRawX(), e.getRawY());
+    }
+
+    public boolean isContained(RectF rect)
+    {
+        return rect.contains(x, y);
     }
 
     @Override

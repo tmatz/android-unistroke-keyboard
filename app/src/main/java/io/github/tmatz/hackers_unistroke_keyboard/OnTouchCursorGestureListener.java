@@ -1,7 +1,6 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
 import android.graphics.RectF;
-import android.os.Handler;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -10,8 +9,20 @@ import android.view.View.OnTouchListener;
 abstract class OnTouchCursorGestureListener
 implements OnTouchListener
 {
+    private static final int CURSOR_GESTURE_START_MS = 300;
+    private static final int CURSOR_GESTURE_REPEAT_MS = 100;
+    private static final int CURSOR_GESTURE_PAUSE_MS = 200;
+
+    private enum State
+    {
+        SLEEP,
+        START,
+        MOVE,
+        REPEAT,
+        BACK_TO_MOVE,
+    }
+
     protected final ApplicationResources resources;
-    private final Handler mHandler = new Handler();
     private final StateMachine stateMachine = new StateMachine();
 
     public OnTouchCursorGestureListener(ApplicationResources resources)
@@ -19,11 +30,11 @@ implements OnTouchListener
         this.resources = resources;
     }
 
-    protected abstract boolean isSpecialOn()
+    protected abstract boolean isSpecialOn();
 
-    protected abstract boolean isModifierOn()
+    protected abstract boolean isModifierOn();
 
-    protected abstract RectF getBounds()
+    protected abstract RectF getBounds();
 
     protected void onStart()
     {
@@ -48,23 +59,8 @@ implements OnTouchListener
 
     private class StateMachine implements Runnable
     {
-        private static final int CURSOR_GESTURE_START_MS = 300;
-        private static final int CURSOR_GESTURE_REPEAT_MS = 100;
-        private static final int CURSOR_GESTURE_PAUSE_MS = 200;
-
-        private enum State
-        {
-            SLEEP,
-            START,
-            MOVE,
-            REPEAT,
-            BACK_TO_MOVE,
-        }
-
+        private final MotionTrack track = new MotionTrack();
         private State mState = State.SLEEP;
-        private VectorF mBasePos = new VectorF();
-        private float mMoveDistance;
-        private MotionEvent mLastEvent;
 
         @Override
         public void run()
@@ -93,26 +89,31 @@ implements OnTouchListener
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
-                    onTouchDown(e);
-                    break;
+                    track.set(v, e);
+                    return onTouchDown();
 
                 case MotionEvent.ACTION_MOVE:
+                    if (track.view() == null)
+                    {
+                        break;
+                    }
+                    track.set(e);
                     switch (mState)
                     {
                         case START:
-                            onTouchMoveStart(e);
+                            onTouchMoveStart();
                             break;
 
                         case MOVE:
-                            onTouchMoveMove(e);
+                            onTouchMoveMove();
                             break;
 
                         case REPEAT:
-                            onTouchMoveRepeat(e);
+                            onTouchMoveRepeat();
                             break;
 
                         case BACK_TO_MOVE:
-                            onTouchMoveBackToMove(e);
+                            onTouchMoveBackToMove();
                             break;
 
                         default:
@@ -121,80 +122,80 @@ implements OnTouchListener
                     break;
 
                 case MotionEvent.ACTION_UP:
-                    onTouchUp(e);
+                    if (track.view() == null)
+                    {
+                        break;
+                    }
+                    track.set(e);
+                    onTouchUp();
                     break;
 
                 default:
                     break;
             }
 
-            return true;
+            return false;
         }
 
-        protected void onTouchDown(MotionEvent e)
+        private boolean onTouchDown()
         {
             if (isSpecialOn())
             {
-                return;
+                track.clear();
+                return false;
             }
 
             mState = State.START;
-            mLastEvent = e;
-            mBasePos = VectorF.fromEvent(e);
-            mMoveDistance = 0;
-            mHandler.postDelayed(this, CURSOR_GESTURE_START_MS);
+            track.setBasePosition(track.position());
+            track.view().postDelayed(this, CURSOR_GESTURE_START_MS);
+            return true;
         }
 
-        protected void onTouchMoveStart(MotionEvent e)
+        private void onTouchMoveStart()
         {
-            mLastEvent = e;
-            VectorF pos = VectorF.fromEvent(e);
-            float length = pos.sub(mBasePos).fastLength();
-            mBasePos = pos;
-            mMoveDistance += length;
-
-            if (mMoveDistance > resources.getCursorTolerance())
+            track.trackPosition();
+            if (track.trackDistance() > resources.getCursorTolerance())
             {
                 sleep();
             }
         }
 
-        protected void onRunStart()
+        private void onRunStart()
         {
             onStart();
             mState = State.MOVE;
         }
 
-        protected void onTouchMoveMove(MotionEvent e)
+        private void onTouchMoveMove()
         {
-            mLastEvent = e;
-
             boolean isModifierOn = isModifierOn();
 
-            if (!isInGestureArea(e) && !isModifierOn)
+            if (!isInGestureArea(track.event()) && !isModifierOn)
             {
                 mState = State.REPEAT;
-                mHandler.postDelayed(this, CURSOR_GESTURE_REPEAT_MS);
+                track.view().postDelayed(this, CURSOR_GESTURE_REPEAT_MS);
                 return;
             }
 
             float cursorTolerance = resources.getCursorTolerance();
-            VectorF delta = VectorF.fromEvent(e).sub(mBasePos).cutoff(cursorTolerance);
+            VectorF delta = track.difference().cutoff(cursorTolerance);
 
             if (delta.x != 0)
             {
                 onKey(delta.x < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
-                mBasePos.x += Math.copySign(cursorTolerance, delta.x);
+                delta = new VectorF(delta.x, 0);
             }
             else if (delta.y != 0)
             {
                 onKey(delta.y < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-                mBasePos.y += Math.copySign(cursorTolerance, delta.y);
             }
             else
             {
                 return;
             }
+            
+            VectorF move = delta.normalizeEach().mult(cursorTolerance);
+            track.setBasePosition(track.basePosition().add(move));
 
             if (isModifierOn)
             {
@@ -202,22 +203,20 @@ implements OnTouchListener
             }
         }
 
-        protected void onTouchMoveRepeat(MotionEvent e)
+        private void onTouchMoveRepeat()
         {
-            mLastEvent = e;
-
-            if (isInGestureArea(e))
+            if (isInGestureArea(track.event()))
             {
                 mState = State.BACK_TO_MOVE;
-                mHandler.removeCallbacks(this);
-                mHandler.postDelayed(this, CURSOR_GESTURE_PAUSE_MS);
+                track.view().removeCallbacks(this);
+                track.view().postDelayed(this, CURSOR_GESTURE_PAUSE_MS);
             }
         }
 
-        protected void onRunRepeat()
+        private void onRunRepeat()
         {
             RectF bounds = getBounds();
-            VectorF pos = VectorF.fromEvent(mLastEvent);
+            VectorF pos = track.position();
 
             if (!bounds.contains(pos.x, bounds.top))
             {
@@ -233,30 +232,30 @@ implements OnTouchListener
                 sleep();
             }
 
-            mHandler.postDelayed(this, CURSOR_GESTURE_REPEAT_MS);
+            track.view().postDelayed(this, CURSOR_GESTURE_REPEAT_MS);
         }
 
-        protected void onTouchMoveBackToMove(MotionEvent e)
+        private void onTouchMoveBackToMove()
         {
-            mLastEvent = e;
+            // nop
         }
 
-        protected void onRunBackToMove()
+        private void onRunBackToMove()
         {
             mState = State.MOVE;
-            mBasePos = VectorF.fromEvent(mLastEvent);
+            track.setBasePosition(track.position());
         }
 
-        protected void onTouchUp(MotionEvent e)
+        private void onTouchUp()
         {
             sleep();
         }
 
         private void sleep()
         {
-            mHandler.removeCallbacks(this);
-            mLastEvent = null;
-            if (mState != State.SLEEP && mState != mState.START)
+            track.view().removeCallbacks(this);
+            track.clear();
+            if (mState != mState.START)
             {
                 onFinish();
             }
