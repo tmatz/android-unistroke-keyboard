@@ -7,8 +7,8 @@ class VectorF
 {
     public static final VectorF Zero = new VectorF();
 
-    public float x;
-    public float y;
+    public final float x;
+    public final float y;
 
     public VectorF()
     {
@@ -27,19 +27,14 @@ class VectorF
         return new VectorF(x + v.x, y + v.y);
     }
 
+    public VectorF sub(VectorF v)
+    {
+        return new VectorF(x - v.x, y - v.y);
+    }
+
     public VectorF mult(float f)
     {
         return new VectorF(x * f, y * f);
-    }
-
-    public VectorF mult(float fx, float fy)
-    {
-        return new VectorF(x * fx, y * fy);
-    }
-
-    public VectorF sub(VectorF v)
-    {
-        return add(v.mult(-1));
     }
 
     public double length()
