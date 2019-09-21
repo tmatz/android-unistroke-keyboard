@@ -81,18 +81,14 @@ implements OnTouchListener
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
-                    if (result == true)
+                    if (result)
                     {
-                        mView = view;
+                        onDown(view);
                     }
                     break;
 
                 case MotionEvent.ACTION_UP:
-                    if (mView != null)
-                    {
-                        onUp(e);
-                        mView = null;
-                    }
+                    onUp();
                     break;
 
                 default:
@@ -101,19 +97,31 @@ implements OnTouchListener
             return result;
         }
 
-        @Override
-        public boolean onDown(MotionEvent e)
+        private void onDown(View view)
         {
-            return true;
+            mView = view;
         }
 
-        private void onUp(MotionEvent e)
+        private void onUp()
         {
+            if (mView == null)
+            {
+                return;
+            }
+
             if (mLongPress)
             {
                 onKeyUp(keyCode);
                 mView.removeCallbacks(this);
             }
+
+            mView = null;
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e)
+        {
+            return true;
         }
 
         @Override

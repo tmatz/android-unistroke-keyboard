@@ -1,7 +1,6 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
 import android.graphics.RectF;
-import android.os.Handler;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
