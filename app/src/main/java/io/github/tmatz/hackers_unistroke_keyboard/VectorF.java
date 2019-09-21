@@ -32,6 +32,11 @@ class VectorF
         return new VectorF(x * f, y * f);
     }
 
+    public VectorF mult(float fx, float fy)
+    {
+        return new VectorF(x * fx, y * fy);
+    }
+
     public VectorF sub(VectorF v)
     {
         return add(v.mult(-1));
@@ -59,6 +64,13 @@ class VectorF
         return new VectorF(
             Math.min(0, x - rect.left) + Math.max(0, x - rect.right),
             Math.min(0, y - rect.top) + Math.max(0, y - rect.bottom));
+    }
+
+    public VectorF normalizeEach()
+    {
+        return new VectorF(
+            Math.copySign(x == 0 ? 0 : 1, x),
+            Math.copySign(y == 0 ? 0 : 1, y));
     }
 
     public static VectorF fromEvent(MotionEvent e)

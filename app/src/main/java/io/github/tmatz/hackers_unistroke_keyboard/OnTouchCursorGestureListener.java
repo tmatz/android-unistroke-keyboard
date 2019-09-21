@@ -183,19 +183,19 @@ implements OnTouchListener
             if (delta.x != 0)
             {
                 onKey(delta.x < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT);
-                VectorF move = new VectorF(Math.copySign(cursorTolerance, delta.x), 0);
-                track.setBasePosition(track.basePosition().add(move));
+                delta = new VectorF(delta.x, 0);
             }
             else if (delta.y != 0)
             {
                 onKey(delta.y < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN);
-                VectorF move = new VectorF(0, Math.copySign(cursorTolerance, delta.y));
-                track.setBasePosition(track.basePosition().add(move));
             }
             else
             {
                 return;
             }
+            
+            VectorF move = delta.normalizeEach().mult(cursorTolerance);
+            track.setBasePosition(track.basePosition().add(move));
 
             if (isModifierOn)
             {
