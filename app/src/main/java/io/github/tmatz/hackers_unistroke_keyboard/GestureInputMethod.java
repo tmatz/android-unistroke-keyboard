@@ -152,15 +152,9 @@ implements IKeyboardService
         {
             final View mainView = getLayoutInflater().inflate(R.layout.input_method, null);
 
-            final ViewGroup keyboardArea = mainView.findViewById(R.id.keyboard_area);
-            final View keyboardView = getLayoutInflater().inflate(R.layout.keyboard, keyboardArea);
-
-            final View gestureArea = mainView.findViewById(R.id.gesture_area);
-            final Button extendKey = mainView.findViewById(R.id.button_key);
-
             setupMainView(mainView);
-            setupKeyboardView(keyboardView);
-            setupExtendKey(extendKey, gestureArea, keyboardArea);
+            setupKeyboardView(mainView);
+            setupExtendKey(mainView);
             mInfoView.setup(mainView);
 
             update();
@@ -236,8 +230,12 @@ implements IKeyboardService
             overlayNum.setOnTouchListener(onTouchCursorGestureListener);
         }
 
-        private void setupExtendKey(final Button extendKey, final View unistrokeArea, final View keyboardArea)
+        private void setupExtendKey(final View view)
         {
+            final View keyboardArea = view.findViewById(R.id.keyboard_area);
+            final View gestureArea = view.findViewById(R.id.gesture_area);
+            final Button extendKey = view.findViewById(R.id.button_key);
+
             keyboardArea.setVisibility(View.INVISIBLE);
 
             extendKey.setOnClickListener(
@@ -254,12 +252,12 @@ implements IKeyboardService
                         if (keyboardArea.getVisibility() == View.VISIBLE)
                         {
                             keyboardArea.setVisibility(View.INVISIBLE);
-                            unistrokeArea.setVisibility(View.VISIBLE);
+                            gestureArea.setVisibility(View.VISIBLE);
                         }
                         else
                         {
                             keyboardArea.setVisibility(View.VISIBLE);
-                            unistrokeArea.setVisibility(View.INVISIBLE);
+                            gestureArea.setVisibility(View.INVISIBLE);
                         }
                     }
                 });

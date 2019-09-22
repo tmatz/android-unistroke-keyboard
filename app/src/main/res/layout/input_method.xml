@@ -110,10 +110,7 @@
 
             </LinearLayout>
 
-            <FrameLayout
-                android:layout_height="match_parent"
-                android:layout_width="match_parent"
-                android:id="@+id/keyboard_area"/>
+            <include layout="@layout/keyboard" android:id="@+id/keyboard_area" />
 
         </FrameLayout>
 
