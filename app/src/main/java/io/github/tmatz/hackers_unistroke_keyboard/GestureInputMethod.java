@@ -251,14 +251,14 @@ implements IKeyboardService
             extendKey.setOnTouchListener(
                 new OnTouchGestureListener(view.getContext())
                 {           
-                    //@Override
+                    @Override
                     public boolean onSingleTapUp(MotionEvent e)
                     {
                         toggleKeyboadOn();
                         return true;
                     }
                     
-                    //@Override
+                    @Override
                     public void onLongPress(MotionEvent e)
                     {
                         showInputMethodPicker();
