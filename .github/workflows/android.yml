@@ -2,6 +2,8 @@ name: Android CI
 
 on:
   push:
+  release:
+    types: [published, prereleased]
   workflow_dispatch:
 
 jobs:
@@ -20,8 +22,15 @@ jobs:
       - name: Build with Gradle
         run: chmod +x ./gradlew && ./gradlew build
 
-      - name: Upload APK
+      - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
           name: app
           path: app/**/*.apk
+
+      - name: Upload release assets
+        if: ${{ github.event_name == 'release' }}
+        uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: "app/**/*.apk"
