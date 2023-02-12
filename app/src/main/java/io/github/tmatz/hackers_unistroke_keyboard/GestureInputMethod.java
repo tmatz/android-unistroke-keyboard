@@ -16,6 +16,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.view.inputmethod.*;
 
 public class GestureInputMethod
 extends InputMethodService
@@ -99,6 +100,15 @@ implements IKeyboardService
     public void performEditorAction()
     {
         getCurrentInputConnection().performEditorAction(getEditorAction());
+    }
+
+    public void showInputMethodPicker()
+    {
+        InputMethodManager manager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+        if (manager != null)
+        {
+            manager.showInputMethodPicker();
+        }
     }
 
     public void sendText(String str)
@@ -238,13 +248,20 @@ implements IKeyboardService
 
             keyboardArea.setVisibility(View.INVISIBLE);
 
-            extendKey.setOnClickListener(
-                new OnClickListener()
-                {
+            extendKey.setOnTouchListener(
+                new OnTouchGestureListener(view.getContext())
+                {           
                     @Override
-                    public void onClick(View v)
+                    public boolean onSingleTapUp(MotionEvent e)
                     {
                         toggleKeyboadOn();
+                        return true;
+                    }
+                    
+                    @Override
+                    public void onLongPress(MotionEvent e)
+                    {
+                        showInputMethodPicker();
                     }
 
                     private void toggleKeyboadOn()
