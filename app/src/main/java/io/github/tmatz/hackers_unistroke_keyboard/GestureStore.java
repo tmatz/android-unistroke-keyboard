@@ -15,26 +15,26 @@ class GestureStore
     public static final int FLAG_CATEGORY_CONTROL = 8;
     public static final int FLAG_STRICT = 16;
 
-    private final ApplicationResources resources;
-    private final ArrayList<WeightedGestureLibrary> libraries = new ArrayList<>();
+    private final ApplicationResources mResources;
+    private final ArrayList<WeightedGestureLibrary> mLibraries = new ArrayList<>();
 
     public GestureStore(Context context, ApplicationResources resources)
     {
-        this.resources = resources;
+        mResources = resources;
         Loader loader = new Loader(context);
-        libraries.add(loader.load(1.0, R.raw.gestures_alphabet, FLAG_CATEGORY_ALPHABET));
-        libraries.add(loader.load(1.0, R.raw.gestures_number, FLAG_CATEGORY_NUMBER));
-        libraries.add(loader.load(1.0, R.raw.gestures_special, FLAG_CATEGORY_SPECIAL));
-        libraries.add(loader.load(0.7, R.raw.gestures_control, FLAG_CATEGORY_CONTROL));
+        mLibraries.add(loader.load(1.0, R.raw.gestures_alphabet, FLAG_CATEGORY_ALPHABET));
+        mLibraries.add(loader.load(1.0, R.raw.gestures_number, FLAG_CATEGORY_NUMBER));
+        mLibraries.add(loader.load(1.0, R.raw.gestures_special, FLAG_CATEGORY_SPECIAL));
+        mLibraries.add(loader.load(0.7, R.raw.gestures_control, FLAG_CATEGORY_CONTROL));
     }
 
     public PredictionResult recognize(Gesture gesture, int flags)
     {
         PredictionResult prediction = PredictionResult.Zero;
 
-        for (WeightedGestureLibrary library: libraries)
+        for (WeightedGestureLibrary library: mLibraries)
         {
-            if ((flags & library.category) != 0)
+            if ((flags & library.mCategory) != 0)
             {
                 prediction = prediction.choose(library.recognize(gesture, flags));
             }
@@ -45,16 +45,16 @@ class GestureStore
 
     private class Loader
     {
-        private final Context context;
+        private final Context mContext;
 
         public Loader(Context context)
         {
-            this.context = context;
+            mContext = context;
         }
 
         public WeightedGestureLibrary load(double weight, int rawId, int category)
         {
-            GestureLibrary library = GestureLibraries.fromRawResource(context, rawId);
+            GestureLibrary library = GestureLibraries.fromRawResource(mContext, rawId);
             library.setOrientationStyle(8);
             library.load();
             return new WeightedGestureLibrary(library, category, weight);
@@ -63,31 +63,31 @@ class GestureStore
 
     private class WeightedGestureLibrary
     {
-        private final GestureLibrary library;
-        private final int category;
-        private final double weight;
+        private final GestureLibrary mLibrary;
+        private final int mCategory;
+        private final double mWeight;
 
         public WeightedGestureLibrary(GestureLibrary library, int category, double weight)
         {
-            this.library = library;
-            this.category = category;
-            this.weight = weight;
+            mLibrary = library;
+            mCategory = category;
+            mWeight = weight;
         }
 
         public PredictionResult recognize(Gesture gesture, int flags)
         {
-            if (gesture.getLength() < resources.getPeriodTolerance())
+            if (gesture.getLength() < mResources.getPeriodTolerance())
             {
                 return new PredictionResult("period", Double.POSITIVE_INFINITY);
             }
 
-            ArrayList<Prediction> predictions = library.recognize(gesture);
+            ArrayList<Prediction> predictions = mLibrary.recognize(gesture);
             if (predictions.size() == 0)
             {
                 return PredictionResult.Zero;
             }
 
-            PredictionResult first = new PredictionResult(predictions.get(0), weight);
+            PredictionResult first = new PredictionResult(predictions.get(0), mWeight);
 
             if ((flags & FLAG_STRICT) == 0)
             {
@@ -104,7 +104,7 @@ class GestureStore
                 return first;
             }
 
-            PredictionResult next = new PredictionResult(predictions.get(1), weight);
+            PredictionResult next = new PredictionResult(predictions.get(1), mWeight);
 
             if (first.score < next.score + 0.2)
             {
