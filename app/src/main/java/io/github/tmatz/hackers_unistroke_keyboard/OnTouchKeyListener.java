@@ -18,15 +18,15 @@ implements OnTouchListener
         FLICK_DOWN,
     }
 
-    private final ApplicationResources resources;
-    private final int keyCode;
-    private final PrivateKeyGestureDetector detector;
+    private final ApplicationResources mResources;
+    private final int mKeyCode;
+    private final PrivateKeyGestureDetector mDetector;
 
     public OnTouchKeyListener(Context context, ApplicationResources resources, int keyCode)
     {
-        this.resources = resources;
-        this.keyCode = keyCode;
-        this.detector = new PrivateKeyGestureDetector(context);
+        mResources = resources;
+        mKeyCode = keyCode;
+        mDetector = new PrivateKeyGestureDetector(context);
     }
 
     protected void onKeyDown(int keyCode)
@@ -52,32 +52,32 @@ implements OnTouchListener
     @Override
     public boolean onTouch(View view, MotionEvent e)
     {
-        return detector.onTouchEvent(view, e);
+        return mDetector.onTouchEvent(view, e);
     }
 
     private class PrivateKeyGestureDetector
     extends GestureDetector.SimpleOnGestureListener
     implements Runnable
     {
-        private final GestureDetector gestureDetector;
+        private final GestureDetector mGestureDetector;
         private View mView;
         public boolean mLongPress = false;
 
         public PrivateKeyGestureDetector(Context context)
         {
-            this.gestureDetector = new GestureDetector(context, this);
+            mGestureDetector = new GestureDetector(context, this);
         }
 
         @Override
         public void run()
         {
-            onKeyRepeat(keyCode);
-            mView.postDelayed(this, resources.KEYREPEAT_DELAY_MS);
+            onKeyRepeat(mKeyCode);
+            mView.postDelayed(this, mResources.KEYREPEAT_DELAY_MS);
         }
 
         public boolean onTouchEvent(View view, MotionEvent e)
         {
-            boolean result = gestureDetector.onTouchEvent(e);
+            boolean result = mGestureDetector.onTouchEvent(e);
             switch (e.getAction())
             {
                 case MotionEvent.ACTION_DOWN:
@@ -111,7 +111,7 @@ implements OnTouchListener
 
             if (mLongPress)
             {
-                onKeyUp(keyCode);
+                onKeyUp(mKeyCode);
                 mView.removeCallbacks(this);
             }
 
@@ -127,16 +127,16 @@ implements OnTouchListener
         @Override
         public boolean onSingleTapUp(MotionEvent e)
         {
-            onKeyDown(keyCode);
-            onKeyUp(keyCode);
+            onKeyDown(mKeyCode);
+            onKeyUp(mKeyCode);
             return true;
         }
 
         @Override
         public boolean onDoubleTap(MotionEvent e)
         {
-            onKeyDown(keyCode);
-            onKeyUp(keyCode);
+            onKeyDown(mKeyCode);
+            onKeyUp(mKeyCode);
             return true;
         }
 
@@ -150,17 +150,17 @@ implements OnTouchListener
         public void onLongPress(MotionEvent e)
         {
             mLongPress = true;
-            onKeyDown(keyCode);
-            if (!KeyEvent.isModifierKey(keyCode))
+            onKeyDown(mKeyCode);
+            if (!KeyEvent.isModifierKey(mKeyCode))
             {
-                mView.postDelayed(this, resources.KEYREPEAT_DELAY_MS);
+                mView.postDelayed(this, mResources.KEYREPEAT_DELAY_MS);
             }
         }
 
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY)
         {
-            onFlick(keyCode, getFlickDirection(velocityX, velocityY));
+            onFlick(mKeyCode, getFlickDirection(velocityX, velocityY));
             return true;
         }
 
