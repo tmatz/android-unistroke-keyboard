@@ -257,7 +257,7 @@ implements IKeyboardService
                         toggleKeyboadOn();
                         return true;
                     }
-                    
+
                     @Override
                     public void onLongPress(MotionEvent e)
                     {
@@ -330,15 +330,10 @@ implements IKeyboardService
 
         public void update()
         {
-            if (mViewModel.isCapsLockOn())
-            {
-                mButtonShift.setBackgroundResource(R.drawable.button_locked);
-            }
-            else
-            {
-                mButtonShift.setBackgroundResource(mViewModel.isShiftOn() ? R.drawable.button_active : R.drawable.button);
-            }
-
+            mButtonShift.setBackgroundResource(
+                mViewModel.isCapsLockOn() ? R.drawable.button_locked :
+                mViewModel.isShiftOn() ? R.drawable.button_active :
+                R.drawable.button);
             mButtonCtrl.setBackgroundResource(mViewModel.isCtrlOn() ? R.drawable.button_active : R.drawable.button);
             mButtonAlt.setBackgroundResource(mViewModel.isAltOn() ? R.drawable.button_active : R.drawable.button);
             mInfoView.setText(mViewModel.isSpecialOn() ? "special" : "");
