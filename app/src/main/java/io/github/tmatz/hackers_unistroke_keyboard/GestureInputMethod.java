@@ -22,7 +22,7 @@ public class GestureInputMethod
 extends InputMethodService
 implements IKeyboardService
 {
-    private ApplicationResources resources;
+    private ApplicationResources mResources;
     private ViewController mViewController;
     private final KeyboardViewModel mViewModel = new KeyboardViewModel(this);
     private final Handler mHandler = new Handler();
@@ -31,7 +31,7 @@ implements IKeyboardService
     public void onCreate()
     {
         super.onCreate();
-        resources = new ApplicationResources(getApplicationContext());
+        mResources = new ApplicationResources(getApplicationContext());
         mViewController = new ViewController();
     }
 
@@ -138,7 +138,7 @@ implements IKeyboardService
         {
             return false;
         }
-        vibrator.vibrate(strong ? resources.VIBRATION_STRONG_MS : resources.VIBRATION_MS);
+        vibrator.vibrate(strong ? mResources.VIBRATION_STRONG_MS : mResources.VIBRATION_MS);
         return true;
     }
 
@@ -234,7 +234,7 @@ implements IKeyboardService
                 });
 
             final OnTouchCursorGestureListener onTouchCursorGestureListener =
-                new GestureAreaOnTouchCursorGestureListener(resources, overlay, overlayNum);
+                new GestureAreaOnTouchCursorGestureListener(mResources, overlay, overlayNum);
 
             overlay.setOnTouchListener(onTouchCursorGestureListener);
             overlayNum.setOnTouchListener(onTouchCursorGestureListener);
@@ -288,7 +288,7 @@ implements IKeyboardService
             if (keyCode != KeyEvent.KEYCODE_UNKNOWN)
             {
                 button.setOnTouchListener(
-                    new OnTouchKeyListener(GestureInputMethod.this, resources, keyCode)
+                    new OnTouchKeyListener(GestureInputMethod.this, mResources, keyCode)
                     {
                         @Override
                         protected void onKeyDown(int keyCode)
@@ -412,7 +412,7 @@ implements IKeyboardService
             public void onGestureEnded(GestureOverlayView overlay, MotionEvent e)
             {
                 Gesture gesture = overlay.getGesture();
-                PredictionResult prediction = resources.gestures.recognize(gesture, makeFlags());
+                PredictionResult prediction = mResources.gestures.recognize(gesture, makeFlags());
                 if (prediction.score == 0)
                 {
                     vibrate(true);
