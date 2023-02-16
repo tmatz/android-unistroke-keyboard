@@ -17,7 +17,7 @@ class KeyboardView
     private final Context mContext;
     private final ApplicationResources mResources;
     private final IKeyboardState mKeyboardState;
-    private final IKeyboardCommandHandler mKeyboardCommandHandler;
+    private final IKeyboardCommandHandler mCommandHandler;
     private ViewGroup mCenterPanel;
     private Button mButtonShift;
     private Button mButtonCtrl;
@@ -32,8 +32,8 @@ class KeyboardView
     {
         mContext = context;
         mResources = resources;
-        mKeyboardState = commandHandler;
-        mKeyboardCommandHandler = commandHandler;
+        mKeyboardState = keyboardState;
+        mCommandHandler = commandHandler;
     }
 
     public void destroy()
@@ -143,7 +143,7 @@ class KeyboardView
                 @Override
                 public void onLongPress(MotionEvent e)
                 {
-                    mKeyboardCommandHandler.showInputMethodPicker();
+                    mCommandHandler.showInputMethodPicker();
                 }
 
                 private void toggleKeyboadOn()
@@ -175,19 +175,19 @@ class KeyboardView
                     @Override
                     protected void onKeyDown(int keyCode)
                     {
-                        mKeyboardCommandHandler.keyDown(keyCode);
+                        mCommandHandler.keyDown(keyCode);
                     }
 
                     @Override
                     protected void onKeyUp(int keyCode)
                     {
-                        mKeyboardCommandHandler.keyUp(keyCode);
+                        mCommandHandler.keyUp(keyCode);
                     }
 
                     @Override
                     protected void onKeyRepeat(int keyCode)
                     {
-                        mKeyboardCommandHandler.keyRepeat(keyCode);
+                        mCommandHandler.keyRepeat(keyCode);
                     }
 
                     @Override
@@ -195,15 +195,15 @@ class KeyboardView
                     {
                         if (keyCode == KeyEvent.KEYCODE_DEL && direction == FlickDirection.FLICK_LEFT)
                         {
-                            mKeyboardCommandHandler.key(KeyEvent.KEYCODE_FORWARD_DEL);
+                            mCommandHandler.key(KeyEvent.KEYCODE_FORWARD_DEL);
                         }
                         else if (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT && direction == FlickDirection.FLICK_RIGHT)
                         {
-                            mKeyboardCommandHandler.setShiftOn(false);
+                            mCommandHandler.setShiftOn(false);
                         }
                         else
                         {
-                            mKeyboardCommandHandler.key(keyCode);
+                            mCommandHandler.key(keyCode);
                         }
                     }
                 });
@@ -292,18 +292,18 @@ class KeyboardView
             PredictionResult prediction = mResources.gestures.recognize(gesture, makeFlags());
             if (prediction.score == 0)
             {
-                mKeyboardCommandHandler.vibrate(true);
+                mCommandHandler.vibrate(true);
                 return;
             }
 
             int keyCode = KeyEventUtils.keyCodeFromTag(prediction.name);
             if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
             {
-                mKeyboardCommandHandler.sendText(prediction.name);
+                mCommandHandler.sendText(prediction.name);
             }
             else
             {
-                mKeyboardCommandHandler.key(keyCode);
+                mCommandHandler.key(keyCode);
             }
         }
 
@@ -355,7 +355,7 @@ class KeyboardView
         @Override
         protected void onKey(int keyCode)
         {
-            mKeyboardCommandHandler.key(keyCode);
+            mCommandHandler.key(keyCode);
         }
 
         @Override
@@ -369,9 +369,9 @@ class KeyboardView
         {
             update();
 
-            if (!mKeyboardCommandHandler.vibrate(false))
+            if (!mCommandHandler.vibrate(false))
             {
-                mKeyboardCommandHandler.toast("cursor mode");
+                mCommandHandler.toast("cursor mode");
             }
 
             for (GestureOverlayView v: overlay)
