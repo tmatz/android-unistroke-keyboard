@@ -24,9 +24,9 @@ interface IKeyboardCommandHandler
     void key(int keyCode);
     void keyDown(int keyCode);
     void keyUp(int keyCode);
-    void keyRepeat(int keyCode)
+    void keyRepeat(int keyCode);
     void showInputMethodPicker();
-    boolean vibrate(boolean strong)
+    boolean vibrate(boolean strong);
     void toast(String message);
 }
 
