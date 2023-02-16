@@ -13,5 +13,11 @@ interface IKeyboardService
     boolean isEditorActionRequested();
 
     void performEditorAction();
+    
+    void showInputMethodPicker();
+    
+    boolean vibrate(boolean strong);
+    
+    void toast(String message);
 }
 
