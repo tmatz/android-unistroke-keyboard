@@ -12,7 +12,6 @@ extends InputMethodService
 implements IKeyboardService
 {
     private KeyboardView mKeyboardView;
-    private final Handler mHandler = new Handler();
 
     @Override
     public void onCreate()
@@ -54,7 +53,6 @@ implements IKeyboardService
     @Override
     public void onFinishInputView(boolean finishingInput)
     {
-        mHandler.removeCallbacks(null);
         super.onFinishInputView(finishingInput);
     }
 
