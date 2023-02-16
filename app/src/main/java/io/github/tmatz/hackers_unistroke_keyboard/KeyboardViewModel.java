@@ -2,6 +2,10 @@ package io.github.tmatz.hackers_unistroke_keyboard;
 
 import android.view.KeyEvent;
 import java.util.HashMap;
+import android.content.Context;
+import android.os.Vibrator;
+import android.widget.Toast;
+import android.view.inputmethod.InputMethodManager;
 
 interface IKeyboardState
 {
@@ -21,6 +25,9 @@ interface IKeyboardCommandHandler
     void keyDown(int keyCode);
     void keyUp(int keyCode);
     void keyRepeat(int keyCode)
+    void showInputMethodPicker();
+    boolean vibrate(boolean strong)
+    void toast(String message);
 }
 
 class KeyboardViewModel implements IKeyboardState, IKeyboardCommandHandler
@@ -30,15 +37,19 @@ class KeyboardViewModel implements IKeyboardState, IKeyboardCommandHandler
     private static final int META_CTRL = KeyEvent.META_CTRL_ON | KeyEvent.META_CTRL_LEFT_ON;
     private static final int META_ALT = KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON;
 
+    private final Context mContext;
     private final IKeyboardService mService;
+    private final ApplicationResources mResources;
     private final KeyHandler mKeyHandler = new CompositeKeyHandler();
     private int mMetaState;
     private boolean mSpecialOn;
     private boolean mShiftUsed;
 
-    public KeyboardViewModel(IKeyboardService service)
+    public KeyboardViewModel(Context context, IKeyboardService service, ApplicationResources resources)
     {
+        mContext = context;
         mService = service;
+        mResources = resources;
     }
 
     public void clearState()
@@ -147,6 +158,32 @@ class KeyboardViewModel implements IKeyboardState, IKeyboardCommandHandler
         {
             mService.sendKey(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_SHIFT_LEFT, mMetaState & ~META_SHIFT);
         }
+    }
+
+    public void showInputMethodPicker()
+    {
+        InputMethodManager manager = (InputMethodManager)mContext.getSystemService(mContext.INPUT_METHOD_SERVICE);
+        if (manager != null)
+        {
+            manager.showInputMethodPicker();
+        }
+    }
+    
+
+    public boolean vibrate(boolean strong)
+    {
+        Vibrator vibrator = (Vibrator)mContext.getSystemService(mContext.VIBRATOR_SERVICE);
+        if (vibrator == null || !vibrator.hasVibrator())
+        {
+            return false;
+        }
+        vibrator.vibrate(strong ? mResources.VIBRATION_STRONG_MS : mResources.VIBRATION_MS);
+        return true;
+    }
+
+    public void toast(String message)
+    {
+        Toast.makeText(mContext, message, Toast.LENGTH_SHORT).show();
     }
 
     private class KeyHandler

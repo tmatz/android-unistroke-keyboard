@@ -22,8 +22,8 @@ extends InputMethodService
 implements IKeyboardService
 {
     private ApplicationResources mResources;
+    private KeyboardViewModel mViewModel;
     private KeyboardViewController mViewController;
-    private final KeyboardViewModel mViewModel = new KeyboardViewModel(this);
     private final Handler mHandler = new Handler();
 
     @Override
@@ -31,6 +31,7 @@ implements IKeyboardService
     {
         super.onCreate();
         mResources = new ApplicationResources(getApplicationContext());
+        mViewModel = new KeyboardViewModel(this, this, mResources);
         mViewController = new KeyboardViewController(this, mResources, this, mViewModel);
     }
 
@@ -104,15 +105,6 @@ implements IKeyboardService
         getCurrentInputConnection().performEditorAction(getEditorAction());
     }
 
-    public void showInputMethodPicker()
-    {
-        InputMethodManager manager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
-        if (manager != null)
-        {
-            manager.showInputMethodPicker();
-        }
-    }
-
     public void sendText(String str)
     {
         getCurrentInputConnection().commitText(str, str.length());
@@ -131,22 +123,6 @@ implements IKeyboardService
         long time = SystemClock.uptimeMillis();
         KeyEvent event = new KeyEvent(time, time, KeyEvent.ACTION_DOWN, keyCode, 1, metaState);
         getCurrentInputConnection().sendKeyEvent(event);
-    }
-
-    public boolean vibrate(boolean strong)
-    {
-        Vibrator vibrator = (Vibrator)getSystemService(VIBRATOR_SERVICE);
-        if (vibrator == null || !vibrator.hasVibrator())
-        {
-            return false;
-        }
-        vibrator.vibrate(strong ? mResources.VIBRATION_STRONG_MS : mResources.VIBRATION_MS);
-        return true;
-    }
-
-    public void toast(String message)
-    {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }
 

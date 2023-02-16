@@ -16,7 +16,6 @@ class KeyboardViewController
 {
     private final Context mContext;
     private final ApplicationResources mResources;
-    private final IKeyboardService mKeyboardService;
     private final IKeyboardState mKeyboardState;
     private final IKeyboardCommandHandler mKeyboardCommandHandler;
     private ViewGroup mCenterPanel;
@@ -34,7 +33,6 @@ class KeyboardViewController
     {
         mContext = context;
         mResources = resources;
-        mKeyboardService = keyboardService;
         mKeyboardState = viewModel;
         mKeyboardCommandHandler = viewModel;
     }
@@ -146,7 +144,7 @@ class KeyboardViewController
                 @Override
                 public void onLongPress(MotionEvent e)
                 {
-                    mKeyboardService.showInputMethodPicker();
+                    mKeyboardCommandHandler.showInputMethodPicker();
                 }
 
                 private void toggleKeyboadOn()
@@ -295,7 +293,7 @@ class KeyboardViewController
             PredictionResult prediction = mResources.gestures.recognize(gesture, makeFlags());
             if (prediction.score == 0)
             {
-                mKeyboardService.vibrate(true);
+                mKeyboardCommandHandler.vibrate(true);
                 return;
             }
 
@@ -372,9 +370,9 @@ class KeyboardViewController
         {
             update();
 
-            if (!mKeyboardService.vibrate(false))
+            if (!mKeyboardCommandHandler.vibrate(false))
             {
-                mKeyboardService.toast("cursor mode");
+                mKeyboardCommandHandler.toast("cursor mode");
             }
 
             for (GestureOverlayView v: overlay)
