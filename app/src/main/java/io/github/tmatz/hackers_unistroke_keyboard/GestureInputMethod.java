@@ -32,7 +32,7 @@ implements IKeyboardService
         super.onCreate();
         mResources = new ApplicationResources(getApplicationContext());
         mCommandHandler = new KeyboardCommandHandler(this, this, mResources);
-        mKeyboardView = new KeyboardView(this, mResources, mCommandHandler);
+        mKeyboardView = new KeyboardView(this, mResources, mCommandHandler, mCommandHandler);
     }
 
     @Override

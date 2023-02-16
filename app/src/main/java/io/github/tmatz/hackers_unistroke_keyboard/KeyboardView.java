@@ -27,8 +27,8 @@ class KeyboardView
     public KeyboardView(
         Context context,
         ApplicationResources resources,
-        KeyboardCommandHandler commandHandler
-    )
+        IKeyboardState keyboardState,
+        IKeyboardCommandHandler commandHandler)
     {
         mContext = context;
         mResources = resources;
