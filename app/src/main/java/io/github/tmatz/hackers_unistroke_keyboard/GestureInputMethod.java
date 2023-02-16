@@ -11,8 +11,6 @@ public class GestureInputMethod
 extends InputMethodService
 implements IKeyboardService
 {
-    private ApplicationResources mResources;
-    private KeyboardCommandHandler mCommandHandler;
     private KeyboardView mKeyboardView;
     private final Handler mHandler = new Handler();
 
@@ -20,9 +18,9 @@ implements IKeyboardService
     public void onCreate()
     {
         super.onCreate();
-        mResources = new ApplicationResources(getApplicationContext());
-        mCommandHandler = new KeyboardCommandHandler(this, this, mResources);
-        mKeyboardView = new KeyboardView(this, mResources, mCommandHandler, mCommandHandler);
+        ApplicationResources resources = new ApplicationResources(getApplicationContext());
+        KeyboardCommandHandler commandHandler = new KeyboardCommandHandler(this, this, resources);
+        mKeyboardView = new KeyboardView(this, resources, commandHandler, commandHandler);
     }
 
     @Override
