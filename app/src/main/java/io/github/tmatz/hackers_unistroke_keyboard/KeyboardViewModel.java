@@ -3,7 +3,27 @@ package io.github.tmatz.hackers_unistroke_keyboard;
 import android.view.KeyEvent;
 import java.util.HashMap;
 
-class KeyboardViewModel
+interface IKeyboardState
+{
+    boolean isCapsLockOn();
+    boolean isShiftOn();
+    boolean isCtrlOn();
+    boolean isAltOn();
+    boolean isSpecialOn();
+}
+
+interface IKeyboardCommandHandler
+{
+    void clearState();
+    void setShiftOn(boolean on);
+    void sendText(String str);
+    void key(int keyCode);
+    void keyDown(int keyCode);
+    void keyUp(int keyCode);
+    void keyRepeat(int keyCode)
+}
+
+class KeyboardViewModel implements IKeyboardState, IKeyboardCommandHandler
 {
     private static final int META_CAPS_LOCK = KeyEvent.META_CAPS_LOCK_ON;
     private static final int META_SHIFT = KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON;
@@ -104,7 +124,7 @@ class KeyboardViewModel
         mService.sendKeyRepeat(keyCode, mMetaState);
     }
 
-    private boolean isShiftKey(int keyCode)
+    private static boolean isShiftKey(int keyCode)
     {
         return keyCode == KeyEvent.KEYCODE_SHIFT_LEFT || keyCode == KeyEvent.KEYCODE_SHIFT_RIGHT;
     }

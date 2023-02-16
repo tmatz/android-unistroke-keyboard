@@ -17,7 +17,8 @@ class KeyboardViewController
     private final Context mContext;
     private final ApplicationResources mResources;
     private final IKeyboardService mKeyboardService;
-    private final KeyboardViewModel mViewModel;
+    private final IKeyboardState mKeyboardState;
+    private final IKeyboardCommandHandler mKeyboardCommandHandler;
     private ViewGroup mCenterPanel;
     private Button mButtonShift;
     private Button mButtonCtrl;
@@ -34,7 +35,8 @@ class KeyboardViewController
         mContext = context;
         mResources = resources;
         mKeyboardService = keyboardService;
-        mViewModel = viewModel;
+        mKeyboardState = viewModel;
+        mKeyboardCommandHandler = viewModel;
     }
 
     public void destroy()
@@ -176,19 +178,19 @@ class KeyboardViewController
                     @Override
                     protected void onKeyDown(int keyCode)
                     {
-                        mViewModel.keyDown(keyCode);
+                        mKeyboardCommandHandler.keyDown(keyCode);
                     }
 
                     @Override
                     protected void onKeyUp(int keyCode)
                     {
-                        mViewModel.keyUp(keyCode);
+                        mKeyboardCommandHandler.keyUp(keyCode);
                     }
 
                     @Override
                     protected void onKeyRepeat(int keyCode)
                     {
-                        mViewModel.keyRepeat(keyCode);
+                        mKeyboardCommandHandler.keyRepeat(keyCode);
                     }
 
                     @Override
@@ -196,15 +198,15 @@ class KeyboardViewController
                     {
                         if (keyCode == KeyEvent.KEYCODE_DEL && direction == FlickDirection.FLICK_LEFT)
                         {
-                            mViewModel.key(KeyEvent.KEYCODE_FORWARD_DEL);
+                            mKeyboardCommandHandler.key(KeyEvent.KEYCODE_FORWARD_DEL);
                         }
                         else if (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT && direction == FlickDirection.FLICK_RIGHT)
                         {
-                            mViewModel.setShiftOn(false);
+                            mKeyboardCommandHandler.setShiftOn(false);
                         }
                         else
                         {
-                            mViewModel.key(keyCode);
+                            mKeyboardCommandHandler.key(keyCode);
                         }
                     }
                 });
@@ -214,12 +216,12 @@ class KeyboardViewController
     public void update()
     {
         mButtonShift.setBackgroundResource(
-            mViewModel.isCapsLockOn() ? R.drawable.button_locked :
-            mViewModel.isShiftOn() ? R.drawable.button_active :
+            mKeyboardState.isCapsLockOn() ? R.drawable.button_locked :
+            mKeyboardState.isShiftOn() ? R.drawable.button_active :
             R.drawable.button);
-        mButtonCtrl.setBackgroundResource(mViewModel.isCtrlOn() ? R.drawable.button_active : R.drawable.button);
-        mButtonAlt.setBackgroundResource(mViewModel.isAltOn() ? R.drawable.button_active : R.drawable.button);
-        mInfoView.setText(mViewModel.isSpecialOn() ? "special" : "");
+        mButtonCtrl.setBackgroundResource(mKeyboardState.isCtrlOn() ? R.drawable.button_active : R.drawable.button);
+        mButtonAlt.setBackgroundResource(mKeyboardState.isAltOn() ? R.drawable.button_active : R.drawable.button);
+        mInfoView.setText(mKeyboardState.isSpecialOn() ? "special" : "");
     }
 
     public void setAlphabetActive()
@@ -300,11 +302,11 @@ class KeyboardViewController
             int keyCode = KeyEventUtils.keyCodeFromTag(prediction.name);
             if (keyCode == KeyEvent.KEYCODE_UNKNOWN)
             {
-                mViewModel.sendText(prediction.name);
+                mKeyboardCommandHandler.sendText(prediction.name);
             }
             else
             {
-                mViewModel.key(keyCode);
+                mKeyboardCommandHandler.key(keyCode);
             }
         }
 
@@ -312,7 +314,7 @@ class KeyboardViewController
         {
             int flags;
 
-            if (mViewModel.isSpecialOn())
+            if (mKeyboardState.isSpecialOn())
             {
                 flags = GestureStore.FLAG_CATEGORY_SPECIAL;
             }
@@ -321,7 +323,7 @@ class KeyboardViewController
                 flags = this.category | GestureStore.FLAG_CATEGORY_CONTROL;
             }
 
-            if (mViewModel.isCtrlOn() || mViewModel.isAltOn())
+            if (mKeyboardState.isCtrlOn() || mKeyboardState.isAltOn())
             {
                 flags |= GestureStore.FLAG_STRICT;
             }
@@ -344,19 +346,19 @@ class KeyboardViewController
         @Override
         protected boolean isSpecialOn()
         {
-            return mViewModel.isSpecialOn();
+            return mKeyboardState.isSpecialOn();
         }
 
         @Override
         protected boolean isModifierOn()
         {
-            return mViewModel.isCtrlOn() || mViewModel.isAltOn();
+            return mKeyboardState.isCtrlOn() || mKeyboardState.isAltOn();
         }
 
         @Override
         protected void onKey(int keyCode)
         {
-            mViewModel.key(keyCode);
+            mKeyboardCommandHandler.key(keyCode);
         }
 
         @Override
