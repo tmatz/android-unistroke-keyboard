@@ -1,21 +1,11 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
-import android.gesture.Gesture;
-import android.gesture.GestureOverlayView;
-import android.graphics.RectF;
 import android.inputmethodservice.InputMethodService;
 import android.os.Handler;
 import android.os.SystemClock;
-import android.os.Vibrator;
 import android.view.KeyEvent;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
-import android.widget.TextView;
-import android.widget.Toast;
-import android.view.inputmethod.*;
 
 public class GestureInputMethod
 extends InputMethodService
