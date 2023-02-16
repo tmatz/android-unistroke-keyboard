@@ -169,43 +169,7 @@ class KeyboardView
         if (keyCode != KeyEvent.KEYCODE_UNKNOWN)
         {
             button.setOnTouchListener(
-                new OnTouchKeyListener(mContext, mResources, keyCode)
-                {
-                    @Override
-                    protected void onKeyDown(int keyCode)
-                    {
-                        mCommandHandler.keyDown(keyCode);
-                    }
-
-                    @Override
-                    protected void onKeyUp(int keyCode)
-                    {
-                        mCommandHandler.keyUp(keyCode);
-                    }
-
-                    @Override
-                    protected void onKeyRepeat(int keyCode)
-                    {
-                        mCommandHandler.keyRepeat(keyCode);
-                    }
-
-                    @Override
-                    protected void onFlick(int keyCode, FlickDirection direction)
-                    {
-                        if (keyCode == KeyEvent.KEYCODE_DEL && direction == FlickDirection.FLICK_LEFT)
-                        {
-                            mCommandHandler.key(KeyEvent.KEYCODE_FORWARD_DEL);
-                        }
-                        else if (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT && direction == FlickDirection.FLICK_RIGHT)
-                        {
-                            mCommandHandler.setShiftOn(false);
-                        }
-                        else
-                        {
-                            mCommandHandler.key(keyCode);
-                        }
-                    }
-                });
+                new OnTouchButtonKeyListener(keyCode));
         }
     }
 
@@ -270,6 +234,52 @@ class KeyboardView
                 info.setText(mInfoView.mInfoCurrent.getText());
                 mInfoView.mInfoCurrent.setText("");
                 mInfoView.mInfoCurrent = info;
+            }
+        }
+    }
+
+
+    private class OnTouchButtonKeyListener
+    extends OnTouchKeyListener
+    {
+
+        public OnTouchButtonKeyListener(int keyCode)
+        {
+            super(mContext, mResources, keyCode);
+        }
+
+        @Override
+        protected void onKeyDown(int keyCode)
+        {
+            mCommandHandler.keyDown(keyCode);
+        }
+
+        @Override
+        protected void onKeyUp(int keyCode)
+        {
+            mCommandHandler.keyUp(keyCode);
+        }
+
+        @Override
+        protected void onKeyRepeat(int keyCode)
+        {
+            mCommandHandler.keyRepeat(keyCode);
+        }
+
+        @Override
+        protected void onFlick(int keyCode, FlickDirection direction)
+        {
+            if (keyCode == KeyEvent.KEYCODE_DEL && direction == FlickDirection.FLICK_LEFT)
+            {
+                mCommandHandler.key(KeyEvent.KEYCODE_FORWARD_DEL);
+            }
+            else if (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT && direction == FlickDirection.FLICK_RIGHT)
+            {
+                mCommandHandler.setShiftOn(false);
+            }
+            else
+            {
+                mCommandHandler.key(keyCode);
             }
         }
     }
