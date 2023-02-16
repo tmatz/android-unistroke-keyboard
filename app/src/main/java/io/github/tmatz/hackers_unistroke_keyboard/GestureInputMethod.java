@@ -1,7 +1,6 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
 import android.inputmethodservice.InputMethodService;
-import android.os.Handler;
 import android.os.SystemClock;
 import android.view.KeyEvent;
 import android.view.View;
