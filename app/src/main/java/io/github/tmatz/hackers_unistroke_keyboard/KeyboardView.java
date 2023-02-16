@@ -1,5 +1,6 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
+import android.content.Context;
 import android.gesture.Gesture;
 import android.gesture.GestureOverlayView;
 import android.graphics.RectF;
@@ -9,8 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
-import android.content.Context;
 
 class KeyboardView
 {
