@@ -22,8 +22,8 @@ extends InputMethodService
 implements IKeyboardService
 {
     private ApplicationResources mResources;
-    private KeyboardViewModel mViewModel;
-    private KeyboardViewController mViewController;
+    private KeyboardCommandHandler mCommandHandler;
+    private KeyboardView mKeyboardView;
     private final Handler mHandler = new Handler();
 
     @Override
@@ -31,14 +31,14 @@ implements IKeyboardService
     {
         super.onCreate();
         mResources = new ApplicationResources(getApplicationContext());
-        mViewModel = new KeyboardViewModel(this, this, mResources);
-        mViewController = new KeyboardViewController(this, mResources, this, mViewModel);
+        mCommandHandler = new KeyboardCommandHandler(this, this, mResources);
+        mKeyboardView = new KeyboardView(this, mResources, mCommandHandler);
     }
 
     @Override
     public void onDestroy()
     {
-        mViewController.destroy();
+        mKeyboardView.destroy();
         super.onDestroy();
     }
 
@@ -46,8 +46,8 @@ implements IKeyboardService
     public View onCreateInputView()
     {
         final View view = getLayoutInflater().inflate(R.layout.input_method, null);
-        mViewController.setup(view);
-        mViewController.update();
+        mKeyboardView.setup(view);
+        mKeyboardView.update();
         return view;
     }
 
@@ -72,7 +72,7 @@ implements IKeyboardService
 
     public void updateView()
     {
-        mViewController.update();
+        mKeyboardView.update();
     }
 
     private int getEditorAction()
@@ -108,7 +108,7 @@ implements IKeyboardService
     public void sendText(String str)
     {
         getCurrentInputConnection().commitText(str, str.length());
-        mViewController.update();
+        mKeyboardView.update();
     }
 
     public void sendKey(int action, int keyCode, int metaState)

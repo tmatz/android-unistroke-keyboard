@@ -30,7 +30,7 @@ interface IKeyboardCommandHandler
     void toast(String message);
 }
 
-class KeyboardViewModel implements IKeyboardState, IKeyboardCommandHandler
+class KeyboardCommandHandler implements IKeyboardState, IKeyboardCommandHandler
 {
     private static final int META_CAPS_LOCK = KeyEvent.META_CAPS_LOCK_ON;
     private static final int META_SHIFT = KeyEvent.META_SHIFT_ON | KeyEvent.META_SHIFT_LEFT_ON;
@@ -45,7 +45,7 @@ class KeyboardViewModel implements IKeyboardState, IKeyboardCommandHandler
     private boolean mSpecialOn;
     private boolean mShiftUsed;
 
-    public KeyboardViewModel(Context context, IKeyboardService service, ApplicationResources resources)
+    public KeyboardCommandHandler(Context context, IKeyboardService service, ApplicationResources resources)
     {
         mContext = context;
         mService = service;
@@ -168,7 +168,7 @@ class KeyboardViewModel implements IKeyboardState, IKeyboardCommandHandler
             manager.showInputMethodPicker();
         }
     }
-    
+
 
     public boolean vibrate(boolean strong)
     {

@@ -12,7 +12,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.content.Context;
 
-class KeyboardViewController
+class KeyboardView
 {
     private final Context mContext;
     private final ApplicationResources mResources;
@@ -24,17 +24,16 @@ class KeyboardViewController
     private Button mButtonAlt;
     private final InfoView mInfoView = new InfoView();
 
-    public KeyboardViewController(
+    public KeyboardView(
         Context context,
         ApplicationResources resources,
-        IKeyboardService keyboardService,
-        KeyboardViewModel viewModel
+        KeyboardCommandHandler commandHandler
     )
     {
         mContext = context;
         mResources = resources;
-        mKeyboardState = viewModel;
-        mKeyboardCommandHandler = viewModel;
+        mKeyboardState = commandHandler;
+        mKeyboardCommandHandler = commandHandler;
     }
 
     public void destroy()
