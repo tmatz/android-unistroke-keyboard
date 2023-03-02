@@ -14,4 +14,4 @@ Unistroke Handwriting Input Method for Programming
 * KEY button shows some useful key buttons.
 * Long press enters cursor mode.
 
-![gesture](./docs/images/gesture.png)
+![gesture](./docs/images/gesture.png | width=400)
