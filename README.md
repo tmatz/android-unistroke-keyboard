@@ -6,7 +6,7 @@
 
 Unistroke Handwriting Input Method for Programming
 
-![screenshot](./docs/images/screenshot.png)
+<img alt="screenshot" src="./docs/images/screenshot.png" width="400px">
 
 * Left pane for alphabet.
 * Right pane for number.
@@ -14,4 +14,4 @@ Unistroke Handwriting Input Method for Programming
 * KEY button shows some useful key buttons.
 * Long press enters cursor mode.
 
-![gesture](./docs/images/gesture.png | width=400)
+<img alt="gesture" src="./docs/images/gesture.png" width="400px">
