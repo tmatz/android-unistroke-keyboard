@@ -7,7 +7,7 @@
         <service
             android:name=".GestureInputMethod"
             android:label="@string/ime_name"
-            android:exported="true"
+            android:exported="false"
             android:permission="android.permission.BIND_INPUT_METHOD">
             <intent-filter>
                 <action android:name="android.view.InputMethod" />
