@@ -9,8 +9,8 @@ android {
     
     defaultConfig {
         applicationId = "io.github.tmatz.hackers_unistroke_keyboard"
-        minSdk = 21
-        targetSdk = 26
+        minSdk = 16
+        targetSdk = 33
         versionCode = 1
         versionName = "1.0"
         
