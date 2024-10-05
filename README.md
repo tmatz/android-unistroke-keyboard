@@ -2,7 +2,7 @@
 
 ![Android CI](https://github.com/tmatz/android-unistroke-keyboard/workflows/Android%20CI/badge.svg)
 [![codebeat badge](https://codebeat.co/badges/0ef814df-ee55-41f1-9af7-03c17807479d)](https://codebeat.co/projects/github-com-tmatz-android-unistroke-keyboard-master)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/180a8cae4ef744ee83d9b5103a5c2fd6)](https://www.codacy.com/manual/tmatz/android-unistroke-keyboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=tmatz/android-unistroke-keyboard&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/180a8cae4ef744ee83d9b5103a5c2fd6)](https://app.codacy.com/gh/tmatz/android-unistroke-keyboard/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 Unistroke Handwriting Input Method for Programming
 
