@@ -1,9 +1,20 @@
 package io.github.tmatz.hackers_unistroke_keyboard;
 
+import android.Manifest;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.gesture.Gesture;
 import android.gesture.GestureOverlayView;
 import android.graphics.RectF;
 import android.inputmethodservice.InputMethodService;
+import android.os.Build;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.os.Vibrator;
@@ -17,15 +28,24 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.view.inputmethod.*;
+import androidx.core.app.NotificationChannelCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.PackageManagerCompat;
 
 public class GestureInputMethod
 extends InputMethodService
 implements IKeyboardService
 {
+    static private final String DEFAULT_NOTIFICATION_CANNEL = "default";
+    static private final int DEFAULT_NOTIFICATION = 0;
+    static private final String ACTION_OPEN_INPUT_METHOD = "custom.action.OPEN_INPUT_METHOD";
+
     private ApplicationResources resources;
     private ViewController mViewController;
     private final KeyboardViewModel mViewModel = new KeyboardViewModel(this);
-    private final Handler mHandler = new Handler();
+    private BroadcastReceiver mReceiver;
 
     @Override
     public void onCreate()
@@ -42,6 +62,16 @@ implements IKeyboardService
     }
 
     @Override
+    public void onBindInput() {
+        super.onBindInput();
+    }
+
+    @Override
+    public void onUnbindInput() {
+        super.onUnbindInput();
+    }
+
+    @Override
     public View onCreateInputView()
     {
         View view = mViewController.onCreateInputView();
@@ -55,6 +85,12 @@ implements IKeyboardService
     }
 
     @Override
+    public void onFinishInput() {
+        super.onFinishInput();
+        teardownNotification();
+     }
+
+    @Override
     public void onStartInputView(EditorInfo info, boolean restarting)
     {
         super.onStartInputView(info, restarting);
@@ -63,13 +99,73 @@ implements IKeyboardService
     @Override
     public void onFinishInputView(boolean finishingInput)
     {
-        mHandler.removeCallbacks(null);
         super.onFinishInputView(finishingInput);
+    }
+
+    @Override
+    public void onWindowHidden() {
+        super.onWindowHidden();
+        setupNotification();
+    }
+
+    @Override
+    public void onWindowShown() {
+        super.onWindowShown();
+        teardownNotification();
     }
 
     public void updateView()
     {
         mViewController.update();
+    }
+
+    private void setupNotification()
+    {
+        if (Build.VERSION.SDK_INT < 28) {
+            return;
+        }
+        mReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                switch (intent.getAction()) {
+                    case ACTION_OPEN_INPUT_METHOD:
+                        if (Build.VERSION.SDK_INT >= 28) {
+                            requestShowSelf(0);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        };
+        var filter = new IntentFilter();
+        filter.addAction(ACTION_OPEN_INPUT_METHOD);
+        registerReceiver(mReceiver, filter);
+        var notificationManager = NotificationManagerCompat.from(getApplicationContext());
+        var channel = new NotificationChannelCompat
+            .Builder(DEFAULT_NOTIFICATION_CANNEL, NotificationManagerCompat.IMPORTANCE_LOW)
+            .setName(getString(R.string.default_notification_channel))
+            .build();
+        notificationManager.createNotificationChannel(channel);
+        var notification = new NotificationCompat.Builder(getApplicationContext(), DEFAULT_NOTIFICATION_CANNEL)
+            .setSmallIcon(android.R.drawable.ic_menu_edit)
+            .setContentTitle(getString(R.string.open_input_method))
+            .setContentIntent(PendingIntent.getBroadcast(this, 0, new Intent(ACTION_OPEN_INPUT_METHOD), PendingIntent.FLAG_IMMUTABLE))
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            notificationManager.notify(DEFAULT_NOTIFICATION, notification);
+        }
+    }
+
+    private void teardownNotification() {
+        var notififationManager = NotificationManagerCompat.from(getApplicationContext());
+        notififationManager.cancel(DEFAULT_NOTIFICATION);
+        if (mReceiver != null) {
+            unregisterReceiver(mReceiver);
+            mReceiver = null;
+        }
     }
 
     private int getEditorAction()
@@ -250,14 +346,14 @@ implements IKeyboardService
 
             extendKey.setOnTouchListener(
                 new OnTouchGestureListener(view.getContext())
-                {           
+                {
                     @Override
                     public boolean onSingleTapUp(MotionEvent e)
                     {
                         toggleKeyboadOn();
                         return true;
                     }
-                    
+
                     @Override
                     public void onLongPress(MotionEvent e)
                     {
