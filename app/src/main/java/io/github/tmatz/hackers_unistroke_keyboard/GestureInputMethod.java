@@ -14,6 +14,7 @@ import android.gesture.Gesture;
 import android.gesture.GestureOverlayView;
 import android.graphics.RectF;
 import android.inputmethodservice.InputMethodService;
+import android.os.Build;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.os.Vibrator;
@@ -118,13 +119,21 @@ implements IKeyboardService
         mViewController.update();
     }
 
-    private void setupNotification() {
+    private void setupNotification()
+    {
+        if (Build.VERSION.SDK_INT < 28) {
+            return;
+        }
         mReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 switch (intent.getAction()) {
                     case ACTION_OPEN_INPUT_METHOD:
-                        GestureInputMethod.this.requestShowSelf(0);
+                        if (Build.VERSION.SDK_INT >= 28) {
+                            requestShowSelf(0);
+                        }
+                        break;
+                    default:
                         break;
                 }
             }
@@ -133,7 +142,10 @@ implements IKeyboardService
         filter.addAction(ACTION_OPEN_INPUT_METHOD);
         registerReceiver(mReceiver, filter);
         var notificationManager = NotificationManagerCompat.from(getApplicationContext());
-        var channel = new NotificationChannel(DEFAULT_NOTIFICATION_CANNEL, getString(R.string.default_notification_channel), NotificationManagerCompat.IMPORTANCE_LOW);
+        var channel = new NotificationChannelCompat
+            .Builder(DEFAULT_NOTIFICATION_CANNEL, NotificationManagerCompat.IMPORTANCE_LOW)
+            .setName(getString(R.string.default_notification_channel))
+            .build();
         notificationManager.createNotificationChannel(channel);
         var notification = new NotificationCompat.Builder(getApplicationContext(), DEFAULT_NOTIFICATION_CANNEL)
             .setSmallIcon(android.R.drawable.ic_menu_edit)
